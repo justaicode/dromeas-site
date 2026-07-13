@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running Calc</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #e8eefc;
+    --card: #ffffff;
+    --ink: #1c1e26;
+    --ink-soft: #5b6270;
+    --accent: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0f18;
+      --card: #171b26;
+      --ink: #f2f3f6;
+      --ink-soft: #9aa1b2;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 72px 20px 80px;
+    text-align: center;
+  }
+  .icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 800;
+    margin: 0 0 8px;
+  }
+  p.tagline {
+    color: var(--ink-soft);
+    font-size: 17px;
+    margin: 0 0 40px;
+  }
+  .features {
+    text-align: left;
+    background: var(--card);
+    border-radius: 18px;
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .features ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .features li { margin-bottom: 8px; }
+  .links {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .links a {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .links a:hover { text-decoration: underline; }
+  footer {
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin-top: 48px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="icon">🏃</div>
+  <h1>Running Calc</h1>
+  <p class="tagline">Pace, splits & training tools — private by design.</p>
+
+  <div class="features">
+    <ul>
+      <li>Pace / time / distance calculator with splits</li>
+      <li>Favorites for the combinations you use often</li>
+      <li>Race Predictor, Training Paces, Grade-Adjusted Pace</li>
+      <li>Calories Burned estimator</li>
+      <li>No account, no ads, no tracking — nothing ever leaves your device</li>
+    </ul>
+  </div>
+
+  <div class="links">
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="support.html">Support</a>
+  </div>
+
+  <footer>Running Calc — developed by Roberto Zanon</footer>
+</main>
+</body>
+</html>
