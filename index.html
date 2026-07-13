@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running Calc</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #e8eefc;
+    --card: #ffffff;
+    --ink: #1c1e26;
+    --ink-soft: #5b6270;
+    --accent: #2563eb;
+    --divider: rgba(0,0,0,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0f18;
+      --card: #171b26;
+      --ink: #f2f3f6;
+      --ink-soft: #9aa1b2;
+      --divider: rgba(255,255,255,0.10);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 56px 20px 80px;
+  }
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 800;
+    margin: 0 0 6px;
+  }
+  .tagline {
+    color: var(--ink-soft);
+    font-size: 17px;
+    margin: 0 0 32px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 24px 26px;
+    margin-bottom: 16px;
+  }
+  h2 {
+    font-size: 17px;
+    margin: 0 0 10px;
+  }
+  p {
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+  p:last-child { margin-bottom: 0; }
+  ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  li { margin-bottom: 6px; }
+  a { color: var(--accent); }
+  .links {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 40px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  footer {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">🏃 Running Calc</div>
+  <h1>Running Calc</h1>
+  <p class="tagline">Pace, time, and distance calculations for runners — fast, private, and fully on-device.</p>
+
+  <div class="card">
+    <h2>What it does</h2>
+    <ul>
+      <li>Convert between pace, time, and distance instantly</li>
+      <li>Save your favorite combinations for quick access</li>
+      <li>Works completely offline, with no account required</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Privacy by design</h2>
+    <p>Running Calc doesn't collect, store, or transmit any personal data. Everything you enter stays on your device. See the <a href="privacy.html">Privacy Policy</a> for details.</p>
+  </div>
+
+  <div class="links">
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="support.html">Support</a>
+  </div>
+
+  <footer>Running Calc — developed by Roberto Zanon</footer>
+</main>
+</body>
+</html>
