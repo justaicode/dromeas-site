@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Live tracking · Dromeas</title>
+<meta name="description" content="Follow the race live — position, pace, heart rate and conditions, in real time." />
+<meta name="theme-color" content="#0b1220" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+  :root{
+    --bg:#0b1220; --bg2:#0f1a2e; --card:#131f36; --card2:#182642;
+    --line:#22314f; --text:#eaf0fb; --dim:#9fb0cc; --faint:#6b7d9c;
+    --accent:#2f7df6; --accent2:#4f9dff; --live:#ff4b57; --ok:#33d69f;
+    --temp:#e0851a; --humid:#3389db; --gluc:#7d73dc; --hr:#ff5a7a;
+    --r:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 800px at 50% -10%, #16264a 0%, var(--bg) 55%) fixed, var(--bg);
+    color:var(--text);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 40px}
+  a{color:var(--accent2);text-decoration:none}
+
+  /* Header */
+  .top{display:flex;align-items:center;gap:12px;margin:6px 2px 18px}
+  .brand{font-weight:800;letter-spacing:.2px;font-size:15px;color:var(--dim)}
+  .brand b{color:var(--text)}
+  .status{margin-left:auto;display:inline-flex;align-items:center;gap:8px;
+    padding:7px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);
+    font-weight:700;font-size:12.5px;letter-spacing:.4px;text-transform:uppercase}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--faint)}
+  .status.live .dot{background:var(--live);box-shadow:0 0 0 0 rgba(255,75,87,.6);animation:pulse 1.4s infinite}
+  .status.live{color:#ffd7db;border-color:rgba(255,75,87,.4)}
+  .status.done{color:#bff0dd;border-color:rgba(51,214,159,.4)}
+  .status.done .dot{background:var(--ok);animation:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,75,87,.55)}70%{box-shadow:0 0 0 10px rgba(255,75,87,0)}100%{box-shadow:0 0 0 0 rgba(255,75,87,0)}}
+
+  h1{font-size:26px;line-height:1.15;margin:0 2px 2px;font-weight:800;letter-spacing:-.3px}
+  .sub{color:var(--dim);margin:0 2px 20px;font-size:14px}
+
+  /* Elapsed hero */
+  .elapsed{display:flex;align-items:baseline;gap:10px;margin:0 2px 22px}
+  .elapsed .big{font-variant-numeric:tabular-nums;font-weight:800;font-size:44px;letter-spacing:-1px;line-height:1}
+  .elapsed .lab{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+
+  /* Progress bar */
+  .prog{margin:0 2px 22px}
+  .prog .track{height:12px;border-radius:999px;background:#0c1730;border:1px solid var(--line);overflow:hidden;position:relative}
+  .prog .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;width:0;transition:width .6s ease}
+  .prog .meta{display:flex;justify-content:space-between;margin-top:8px;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
+  .prog .meta b{color:var(--text)}
+
+  /* Stat grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:0 0 20px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px;position:relative;overflow:hidden}
+  .stat .k{color:var(--faint);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;align-items:center;gap:6px}
+  .stat .v{font-weight:800;font-size:26px;letter-spacing:-.5px;margin-top:6px;font-variant-numeric:tabular-nums;line-height:1.05}
+  .stat .u{font-size:14px;color:var(--dim);font-weight:600;margin-left:3px}
+  .stat .sub2{color:var(--faint);font-size:12px;margin-top:3px;font-variant-numeric:tabular-nums}
+  .stat .ic{width:8px;height:8px;border-radius:50%}
+  .stat.accent{background:linear-gradient(180deg,var(--card2),var(--card))}
+
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:0 0 16px;box-shadow:var(--shadow)}
+  .card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);font-weight:800;display:flex;align-items:center;gap:8px}
+  .card h2 .r{margin-left:auto;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0;font-size:12.5px}
+
+  #map{height:230px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0c1730}
+  .leaflet-container{background:#0c1730}
+  .pin{width:16px;height:16px;border-radius:50%;background:var(--live);border:3px solid #fff;box-shadow:0 0 0 4px rgba(255,75,87,.3),0 2px 6px rgba(0,0,0,.5)}
+
+  /* Elevation profile */
+  .profile{width:100%;height:150px;display:block}
+  .profile .fillp{fill:url(#pg)}
+  .profile .linep{fill:none;stroke:var(--accent2);stroke-width:2}
+  .profile .cp{fill:var(--faint)}
+  .profile .cp.done{fill:var(--ok)}
+  .profile .me{fill:var(--live);stroke:#fff;stroke-width:2}
+  .profile .melabel{fill:var(--text);font:700 11px sans-serif}
+
+  /* Checkpoints */
+  .cps{display:flex;flex-direction:column;gap:2px}
+  .cp-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
+  .cp-row:last-child{border-bottom:0}
+  .cp-mark{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+    border:2px solid var(--line);color:var(--faint);font-size:12px;font-weight:800;background:#0c1730}
+  .cp-row.done .cp-mark{background:var(--ok);border-color:var(--ok);color:#06231a}
+  .cp-row.next .cp-mark{border-color:var(--accent);color:var(--accent2);box-shadow:0 0 0 3px rgba(47,125,246,.18)}
+  .cp-name{font-weight:700}
+  .cp-km{color:var(--faint);font-size:12.5px;font-variant-numeric:tabular-nums}
+  .cp-eta{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums}
+  .cp-eta b{font-weight:800}
+  .cp-eta span{display:block;color:var(--faint);font-size:11.5px}
+  .badge-next{margin-left:8px;font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--accent2);
+    border:1px solid rgba(47,125,246,.5);padding:2px 6px;border-radius:6px;text-transform:uppercase;vertical-align:middle}
+
+  .foot{color:var(--faint);font-size:12.5px;text-align:center;margin-top:26px;line-height:1.7}
+  .foot .live-age{font-variant-numeric:tabular-nums}
+
+  /* States */
+  .center{min-height:70vh;display:grid;place-items:center;text-align:center;padding:24px}
+  .center .glyph{font-size:40px;margin-bottom:10px}
+  .center h2{font-size:20px;margin:0 0 8px}
+  .center p{color:var(--dim);max-width:340px;margin:0 auto}
+  .spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent2);animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+  .stale{opacity:.55}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Loading -->
+  <div id="loading" class="center">
+    <div><div class="spin"></div><p>Finding the race…</p></div>
+  </div>
+
+  <!-- Error / not found -->
+  <div id="error" class="center hidden">
+    <div>
+      <div class="glyph">🏳️</div>
+      <h2 id="err-title">Race not found</h2>
+      <p id="err-msg">This tracking link is invalid, private, or the race has ended and sharing was turned off.</p>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="app" class="hidden">
+    <div class="top">
+      <div class="brand"><b>Dromeas</b> · Live</div>
+      <div id="status" class="status"><span class="dot"></span><span id="status-t">—</span></div>
+    </div>
+
+    <h1 id="race-name">—</h1>
+    <p class="sub" id="race-sub">—</p>
+
+    <div class="elapsed">
+      <span class="big" id="elapsed">0:00:00</span>
+      <span class="lab" id="elapsed-lab">Elapsed</span>
+    </div>
+
+    <div class="prog">
+      <div class="track"><div class="fill" id="prog-fill"></div></div>
+      <div class="meta">
+        <span><b id="cur-km">0.0</b> km</span>
+        <span><b id="pct">0</b>%</span>
+        <span>of <b id="tot-km">0</b> km</span>
+      </div>
+    </div>
+
+    <div class="grid" id="stats"></div>
+
+    <div class="card" id="map-card">
+      <h2>Location <span class="r" id="map-r"></span></h2>
+      <div id="map"></div>
+    </div>
+
+    <div class="card">
+      <h2>Course profile</h2>
+      <svg class="profile" id="profile" viewBox="0 0 1000 150" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card" id="cp-card">
+      <h2>Checkpoints <span class="r" id="cp-r"></span></h2>
+      <div class="cps" id="cps"></div>
+    </div>
+
+    <div class="foot">
+      <span id="age" class="live-age"></span><br/>
+      Powered by <b>Dromeas</b> · Live race tracking
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+"use strict";
+/* ------------------------------------------------------------------ config */
+const SUPABASE_URL = "https://dtpmhkjrmdssfejvoror.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0cG1oa2pybWRzc2ZlanZvcm9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxODQzMDEsImV4cCI6MjA5OTc2MDMwMX0.MkbvgHUKD7Un9E6ia44-rObxaLtEsnxVM_LH1HLmtE8";
+const TELEMETRY_MS = 4000;   // live position/HR poll
+const PLAN_MS = 30000;       // plan refresh (checkpoint ticks / edits)
+
+/* --------------------------------------------------------------- utilities */
+const $ = (id) => document.getElementById(id);
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const num = (v) => (typeof v === "number" && isFinite(v)) ? v : null;
+
+function getToken(){
+  const u = new URL(location.href);
+  return u.searchParams.get("id") || u.searchParams.get("token") ||
+         (location.hash ? location.hash.replace(/^#\/?/, "") : "") || "";
+}
+
+async function rpc(fn, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method:"POST",
+    headers:{ "apikey":SUPABASE_KEY, "Authorization":`Bearer ${SUPABASE_KEY}`, "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error(`${fn} ${res.status}`);
+  return res.json();
+}
+
+function fmtDur(sec){
+  if(sec==null || !isFinite(sec) || sec<0) return "—";
+  sec = Math.floor(sec);
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  return h>0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`
+             : `${m}:${String(s).padStart(2,"0")}`;
+}
+function fmtDurShort(sec){
+  if(sec==null || !isFinite(sec) || sec<0) return "—";
+  const h=Math.floor(sec/3600), m=Math.round((sec%3600)/60);
+  return h>0 ? `${h}h ${m}m` : `${m}m`;
+}
+function fmtPace(secPerKm){
+  if(secPerKm==null || !isFinite(secPerKm) || secPerKm<=0) return "—";
+  const m=Math.floor(secPerKm/60), s=Math.round(secPerKm%60);
+  return `${m}:${String(s).padStart(2,"0")}`;
+}
+
+/* --------------------------------------------------- sim condition curves  */
+/* Mirror of the app's SimConditions (demo / simulator mode only). */
+const Sim = {
+  temperature:(f)=> 18 + 8*Math.sin(f*2*Math.PI - Math.PI/2),
+  humidity:(f)=> Math.min(92, Math.max(35, 64 - 24*Math.sin(f*2*Math.PI - Math.PI/2))),
+  glucose:(f)=> Math.max(3.8, 6.3 - f*0.6 + 1.2*Math.sin(f*6*Math.PI)),
+};
+
+/* Interpolate the hourly forecast [{t,tempC,humidity}] at a UTC epoch (seconds). */
+function forecastAt(hourly, tSec, field){
+  if(!Array.isArray(hourly) || hourly.length<2) return null;
+  if(tSec <= hourly[0].t) return hourly[0][field];
+  if(tSec >= hourly[hourly.length-1].t) return hourly[hourly.length-1][field];
+  for(let i=1;i<hourly.length;i++){
+    const a=hourly[i-1], b=hourly[i];
+    if(tSec <= b.t){
+      const span = Math.max(b.t-a.t, 1);
+      const g = (tSec-a.t)/span;
+      return a[field] + (b[field]-a[field])*g;
+    }
+  }
+  return hourly[hourly.length-1][field];
+}
+
+/* ------------------------------------------------------------- plan state  */
+let PLAN=null, PTS=[], TOTKM=0, TOTMIN=0, MINE=0, MAXE=0, MAP=null, ROUTE=null, MEMARK=null, CPMARKS=[];
+let LAST=null;         // last telemetry {km,bpm,elapsed_sec,updated_at,started_at,finished_at}
+let AGE_TIMER=null;
+
+function totalKm(plan){
+  if(PTS.length) return PTS[PTS.length-1].distanceKm || plan.distanceKm || 0;
+  return plan.distanceKm || 0;
+}
+function totalMin(plan){
+  return (plan.predictedHours||0)*60 + (plan.predictedMinutes||0) + (plan.predictedSeconds||0)/60;
+}
+/* Position (lat/lng/elev + normalized x) at a course km, interpolated on the track. */
+function posAt(km){
+  if(!PTS.length) return null;
+  km = clamp(km, 0, TOTKM);
+  if(km<=PTS[0].distanceKm) return PTS[0];
+  for(let i=1;i<PTS.length;i++){
+    if(km <= PTS[i].distanceKm){
+      const a=PTS[i-1], b=PTS[i], span=Math.max(b.distanceKm-a.distanceKm,1e-6), g=(km-a.distanceKm)/span;
+      return {
+        distanceKm:km,
+        latitude:a.latitude+(b.latitude-a.latitude)*g,
+        longitude:a.longitude+(b.longitude-a.longitude)*g,
+        elevationM:a.elevationM+(b.elevationM-a.elevationM)*g,
+      };
+    }
+  }
+  return PTS[PTS.length-1];
+}
+
+/* ------------------------------------------------------------ init / load  */
+async function boot(){
+  const token = getToken();
+  if(!token){ return showError("No race selected","Open the tracking link you were given — it should end with ?id=…"); }
+  try{
+    const plan = await rpc("public_plan", {token});
+    if(!plan || !plan.raceName){ return showError(); }
+    setupPlan(plan);
+    $("loading").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    await tick();               // first telemetry
+    fitMap(0);                  // fit the map once it has a real (non-zero) size
+    setInterval(tick, TELEMETRY_MS);
+    setInterval(refreshPlan, PLAN_MS);
+    startAgeTimer();
+  }catch(e){
+    showError("Can’t reach the race","Check your connection and refresh. "+(e.message||""));
+  }
+}
+
+function showError(title, msg){
+  $("loading").classList.add("hidden"); $("app").classList.add("hidden");
+  if(title) $("err-title").textContent = title;
+  if(msg) $("err-msg").textContent = msg;
+  $("error").classList.remove("hidden");
+}
+
+function setupPlan(plan){
+  PLAN = plan;
+  PTS = (plan.track && Array.isArray(plan.track.points)) ? plan.track.points.filter(p=>num(p.distanceKm)!=null) : [];
+  TOTKM = totalKm(plan);
+  TOTMIN = totalMin(plan);
+  if(PTS.length){
+    MINE = Math.min(...PTS.map(p=>p.elevationM));
+    MAXE = Math.max(...PTS.map(p=>p.elevationM));
+  }
+  $("race-name").textContent = plan.raceName || "Race";
+  document.title = (plan.raceName || "Race") + " · Live tracking";
+  const startTxt = (plan.startHour!=null) ? `Start ${String(plan.startHour).padStart(2,"0")}:${String(plan.startMinute||0).padStart(2,"0")}` : "";
+  const distTxt = TOTKM ? `${TOTKM.toFixed(TOTKM<100?1:0)} km` : "";
+  const predTxt = TOTMIN ? `target ${fmtDurShort(TOTMIN*60)}` : "";
+  $("race-sub").textContent = [distTxt, predTxt, startTxt].filter(Boolean).join("  ·  ");
+  $("tot-km").textContent = TOTKM ? TOTKM.toFixed(TOTKM<100?1:0) : "0";
+  if(plan.simulatorMode) { const s=$("status"); }
+  drawProfile(null);
+  initMap();
+  renderCheckpoints(null);
+}
+
+async function refreshPlan(){
+  try{
+    const token=getToken();
+    const plan = await rpc("public_plan", {token});
+    if(plan && plan.raceName){ PLAN=plan; renderCheckpoints(LAST ? LAST.km : null); }
+  }catch(e){/* keep last */}
+}
+
+/* ----------------------------------------------------------------- tick    */
+async function tick(){
+  try{
+    const token=getToken();
+    const rows = await rpc("public_telemetry", {token});
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    LAST = row || LAST;
+    render();
+  }catch(e){/* keep last frame; age timer will flag staleness */}
+}
+
+function raceState(){
+  if(!LAST) return "pending";
+  if(LAST.finished_at) return "done";
+  if(LAST.started_at) return "live";
+  return "pending";
+}
+
+function render(){
+  const st = raceState();
+  const badge = $("status");
+  badge.className = "status" + (st==="live"?" live":st==="done"?" done":"");
+  $("status-t").textContent = st==="live" ? "Live" : st==="done" ? "Finished" : "Not started";
+
+  const km = LAST ? num(LAST.km) : null;
+  const elapsed = LAST ? num(LAST.elapsed_sec) : null;
+  const hasPos = km!=null && PTS.length;
+
+  // Elapsed
+  $("elapsed").textContent = fmtDur(elapsed!=null ? elapsed : (st==="pending"?0:null));
+  $("elapsed-lab").textContent = st==="done" ? "Finish time" : "Elapsed";
+
+  // Progress
+  const pct = (km!=null && TOTKM) ? clamp(km/TOTKM,0,1)*100 : 0;
+  $("prog-fill").style.width = pct.toFixed(1)+"%";
+  $("cur-km").textContent = km!=null ? km.toFixed(1) : "0.0";
+  $("pct").textContent = Math.round(pct);
+
+  // Derived
+  const secPerKm = (km!=null && km>0.05 && elapsed!=null) ? elapsed/km : null;
+  const totalSec = (secPerKm!=null && TOTKM) ? secPerKm*TOTKM : null;
+  const remainSec = (totalSec!=null && elapsed!=null) ? Math.max(0, totalSec-elapsed) : null;
+  const frac = (km!=null && TOTKM) ? clamp(km/TOTKM,0,1) : 0;
+
+  // Conditions
+  const sim = !!PLAN.simulatorMode;
+  const nowSec = Date.now()/1000;
+  let temp=null, humid=null, gluc=null;
+  if(sim){ temp=Sim.temperature(frac); humid=Sim.humidity(frac); gluc=Sim.glucose(frac); }
+  else{
+    temp = forecastAt(PLAN.hourlyWeather, nowSec, "tempC");
+    humid = forecastAt(PLAN.hourlyWeather, nowSec, "humidity");
+    if(temp==null && num(PLAN.temperatureC)!=null) temp = PLAN.temperatureC; // daily fallback
+  }
+  const hr = LAST ? num(LAST.bpm) : null;
+
+  // Stat cards
+  const cards = [];
+  cards.push(statCard("Pace", secPerKm!=null?fmtPace(secPerKm):"—", "/km", null, "accent"));
+  if(st==="done") cards.push(statCard("Total", fmtDur(elapsed), "", null));
+  else cards.push(statCard("Projected finish", totalSec!=null?fmtDur(totalSec):"—", "", remainSec!=null?`${fmtDurShort(remainSec)} to go`:null));
+  cards.push(statCard("Heart rate", hr!=null?hr:"—", "bpm", null, "", "--hr"));
+  if(temp!=null) cards.push(statCard("Temp", Math.round(temp), "°C", sim?"demo":null, "", "--temp"));
+  if(humid!=null) cards.push(statCard("Humidity", Math.round(humid), "%", sim?"demo":null, "", "--humid"));
+  if(gluc!=null) cards.push(statCard("Glucose", gluc.toFixed(1), "mmol/L", "demo", "", "--gluc"));
+  $("stats").innerHTML = cards.join("");
+
+  // Map + profile marker
+  updateMap(km);
+  drawProfile(km);
+  renderCheckpoints(km, secPerKm);
+  updateAge();
+}
+
+function statCard(k, v, u, sub2, cls, dotVar){
+  const dot = dotVar ? `<span class="ic" style="background:var(${dotVar})"></span>` : "";
+  return `<div class="stat ${cls||""}">
+    <div class="k">${dot}${k}</div>
+    <div class="v">${v}<span class="u">${u||""}</span></div>
+    ${sub2?`<div class="sub2">${sub2}</div>`:""}
+  </div>`;
+}
+
+/* --------------------------------------------------------------- profile   */
+function drawProfile(km){
+  const svg=$("profile"); if(!PTS.length){ svg.innerHTML=""; return; }
+  const W=1000,H=150,pad=14;
+  const span = Math.max(MAXE-MINE, 1);
+  const X = (d)=> (clamp(d/Math.max(TOTKM,1e-6),0,1))*W;
+  const Y = (e)=> H-pad - ((e-MINE)/span)*(H-2*pad);
+  // downsample for path
+  const step = Math.max(1, Math.floor(PTS.length/900));
+  let line=`M ${X(PTS[0].distanceKm).toFixed(1)} ${Y(PTS[0].elevationM).toFixed(1)}`;
+  for(let i=step;i<PTS.length;i+=step){ line+=` L ${X(PTS[i].distanceKm).toFixed(1)} ${Y(PTS[i].elevationM).toFixed(1)}`; }
+  const last=PTS[PTS.length-1]; line+=` L ${X(last.distanceKm).toFixed(1)} ${Y(last.elevationM).toFixed(1)}`;
+  const area = `${line} L ${W} ${H} L 0 ${H} Z`;
+
+  // checkpoint ticks
+  const states = PLAN.checkpointStates||{};
+  let cpm="";
+  (PLAN.checkpoints||[]).forEach(cp=>{
+    const p=posAt(cp.km); if(!p) return;
+    const done = (states[cp.id] && states[cp.id].complete) || (km!=null && km>=cp.km);
+    cpm += `<circle class="cp ${done?"done":""}" cx="${X(cp.km).toFixed(1)}" cy="${Y(p.elevationM).toFixed(1)}" r="3.2"/>`;
+  });
+
+  // you-are-here
+  let me="";
+  if(km!=null){
+    const p=posAt(km);
+    me = `<line x1="${X(km).toFixed(1)}" y1="0" x2="${X(km).toFixed(1)}" y2="${H}" stroke="rgba(255,75,87,.35)" stroke-width="1"/>
+          <circle class="me" cx="${X(km).toFixed(1)}" cy="${Y(p.elevationM).toFixed(1)}" r="5"/>`;
+  }
+
+  svg.innerHTML = `
+    <defs><linearGradient id="pg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#2f7df6" stop-opacity=".38"/>
+      <stop offset="1" stop-color="#2f7df6" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path class="fillp" d="${area}"/>
+    <path class="linep" d="${line}"/>
+    ${cpm}${me}`;
+}
+
+/* ----------------------------------------------------------------- map     */
+function initMap(){
+  if(!window.L || !PTS.length){ $("map-card").classList.add("hidden"); return; }
+  const latlngs = PTS.map(p=>[p.latitude,p.longitude]);
+  MAP = L.map("map",{zoomControl:true, attributionControl:true, scrollWheelZoom:false});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+    maxZoom:18, attribution:'&copy; OpenStreetMap'
+  }).addTo(MAP);
+  ROUTE = L.polyline(latlngs,{color:"#4f9dff",weight:4,opacity:.9}).addTo(MAP);
+  // start / finish
+  L.circleMarker(latlngs[0],{radius:5,color:"#33d69f",fillColor:"#33d69f",fillOpacity:1}).addTo(MAP);
+  L.circleMarker(latlngs[latlngs.length-1],{radius:5,color:"#fff",fillColor:"#2f7df6",fillOpacity:1}).addTo(MAP);
+  // checkpoints
+  (PLAN.checkpoints||[]).forEach(cp=>{
+    const p=posAt(cp.km); if(!p) return;
+    CPMARKS.push(L.circleMarker([p.latitude,p.longitude],{radius:4,color:"#9fb0cc",fillColor:"#131f36",fillOpacity:1,weight:2}).addTo(MAP)
+      .bindTooltip(`CP · ${cp.km.toFixed(1)} km`));
+  });
+  MAP.fitBounds(ROUTE.getBounds().pad(0.12), {maxZoom:15});
+  // Some renderers give below-the-fold elements zero width, so a load-time fit
+  // lands at zoom 0. Re-fit the first time the map actually enters the viewport,
+  // when it's guaranteed real layout.
+  if('IntersectionObserver' in window){
+    let done=false;
+    const io=new IntersectionObserver((ents)=>{
+      ents.forEach(e=>{ if(e.isIntersecting){ MAP.invalidateSize();
+        if(!done && ROUTE){ MAP.fitBounds(ROUTE.getBounds().pad(0.15),{maxZoom:15}); done=true; } } });
+    },{threshold:0.15});
+    io.observe(document.getElementById('map'));
+  }
+}
+/* Off-screen / pre-layout, the map can report no size and fit to zoom 0 (whole
+   world). Re-fit and retry until the zoom is sane. */
+function fitMap(tries){
+  if(!MAP || !ROUTE) return;
+  MAP.invalidateSize();
+  MAP.fitBounds(ROUTE.getBounds().pad(0.15), {maxZoom:15});
+  if(MAP.getZoom() <= 1 && (tries||0) < 10) setTimeout(()=>fitMap((tries||0)+1), 250);
+}
+function updateMap(km){
+  if(!MAP) return;
+  if(km==null){ if(MEMARK){MAP.removeLayer(MEMARK);MEMARK=null;} return; }
+  const p=posAt(km); if(!p) return;
+  const ll=[p.latitude,p.longitude];
+  if(!MEMARK){
+    MEMARK = L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="pin"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(MAP);
+  } else MEMARK.setLatLng(ll);
+}
+
+/* --------------------------------------------------------- checkpoints     */
+function renderCheckpoints(km, secPerKm){
+  const cont=$("cps"); const cps=(PLAN.checkpoints||[]).slice().sort((a,b)=>a.km-b.km);
+  if(!cps.length){ $("cp-card").classList.add("hidden"); return; }
+  const states=PLAN.checkpointStates||{};
+  const doneCount = cps.filter(cp=> (states[cp.id]&&states[cp.id].complete) || (km!=null&&km>=cp.km)).length;
+  $("cp-r").textContent = `${doneCount}/${cps.length} done`;
+  // next = first not passed
+  let nextIdx = cps.findIndex(cp => !((states[cp.id]&&states[cp.id].complete) || (km!=null&&km>=cp.km)));
+  let html="";
+  cps.forEach((cp,i)=>{
+    const done = (states[cp.id]&&states[cp.id].complete) || (km!=null&&km>=cp.km);
+    const isNext = i===nextIdx;
+    let eta="";
+    if(isNext && km!=null && secPerKm){
+      const toGo=Math.max(0,cp.km-km);
+      eta=`<div class="cp-eta"><b>${fmtDurShort(toGo*secPerKm)}</b><span>${toGo.toFixed(1)} km to go</span></div>`;
+    } else if(done){
+      eta=`<div class="cp-eta"><b style="color:var(--ok)">✓</b><span>done</span></div>`;
+    }
+    html += `<div class="cp-row ${done?"done":""} ${isNext?"next":""}">
+      <div class="cp-mark">${done?"✓":(i+1)}</div>
+      <div><div class="cp-name">Checkpoint ${i+1}${isNext?'<span class="badge-next">Next</span>':''}</div>
+      <div class="cp-km">${cp.km.toFixed(1)} km${cp.pinned?" · 📍":""}</div></div>
+      ${eta}
+    </div>`;
+  });
+  cont.innerHTML=html;
+}
+
+/* --------------------------------------------------------------- age       */
+function startAgeTimer(){ if(AGE_TIMER) clearInterval(AGE_TIMER); AGE_TIMER=setInterval(updateAge,1000); }
+function updateAge(){
+  if(!LAST || !LAST.updated_at){ $("age").textContent=""; return; }
+  const t=Date.parse(LAST.updated_at); if(isNaN(t)){ $("age").textContent=""; return; }
+  const sec=Math.max(0,(Date.now()-t)/1000);
+  const st=raceState();
+  const stale = st==="live" && sec>25;
+  $("app").classList.toggle("stale", stale);
+  if(st==="done") $("age").textContent = "Race complete";
+  else if(st==="pending") $("age").textContent = "Waiting for the start";
+  else $("age").innerHTML = stale ? `Signal paused · last update ${fmtDurShort(sec)} ago`
+                                  : `Live · updated ${sec<5?"just now":Math.round(sec)+"s ago"}`;
+  $("map-r").textContent = (st==="live" && !stale) ? "live" : "";
+}
+
+boot();
+</script>
+</body>
+</html>

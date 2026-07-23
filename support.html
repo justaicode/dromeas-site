@@ -2,75 +2,91 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Support — Dromeas</title>
+<meta name="description" content="Get help with Dromeas — contact, and answers to common questions about offline use, accounts, sync and account deletion.">
+<meta name="theme-color" content="#e8eefc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0f18" media="(prefers-color-scheme: dark)">
 <style>
-  :root {
+  :root{
     color-scheme: light dark;
-    --bg: #e8eefc;
-    --card: #ffffff;
-    --ink: #1c1e26;
-    --ink-soft: #5b6270;
-    --accent: #2563eb;
+    --bg:#e8eefc; --bg-tint:#eef3fd; --card:#ffffff; --card-2:#f5f8fe;
+    --ink:#1c1e26; --ink-soft:#5b6270; --line:rgba(20,30,60,.10); --line-strong:rgba(20,30,60,.16);
+    --accent:#2563eb; --accent-2:#4f9dff;
+    --radius:18px; --shadow:0 18px 44px rgba(20,30,60,.13); --shadow-sm:0 6px 18px rgba(20,30,60,.08);
+    --maxw:1120px;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0b0f18;
-      --card: #171b26;
-      --ink: #f2f3f6;
-      --ink-soft: #9aa1b2;
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0b0f18; --bg-tint:#0e1422; --card:#171b26; --card-2:#1b2130;
+      --ink:#f2f3f6; --ink-soft:#9aa1b2; --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.16);
+      --accent:#5b9bff; --accent-2:#8fbcff;
+      --shadow:0 24px 60px rgba(0,0,0,.5); --shadow-sm:0 8px 22px rgba(0,0,0,.4);
     }
   }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-    line-height: 1.6;
+  *{box-sizing:border-box;}
+  body{
+    margin:0;color:var(--ink);
+    background:radial-gradient(1100px 640px at 50% -220px, color-mix(in srgb, var(--accent) 12%, transparent), transparent 62%),var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;
   }
-  main {
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 56px 20px 80px;
-  }
-  .eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--accent);
-    font-weight: 700;
-    font-size: 14px;
-    margin-bottom: 8px;
-  }
-  h1 {
-    font-size: 30px;
-    font-weight: 800;
-    margin: 0 0 32px;
-  }
-  .card {
-    background: var(--card);
-    border-radius: 18px;
-    padding: 24px 26px;
-    margin-bottom: 16px;
-  }
-  h2 { font-size: 17px; margin: 0 0 10px; }
-  p { margin: 0 0 12px; }
-  p:last-child { margin-bottom: 0; }
-  ul { margin: 0; padding-left: 20px; }
-  li { margin-bottom: 10px; }
-  a { color: var(--accent); font-weight: 600; }
-  footer {
-    text-align: center;
-    color: var(--ink-soft);
-    font-size: 13px;
-    margin-top: 40px;
-  }
+  a{color:var(--accent);}
+  h1,h2{letter-spacing:-.02em;line-height:1.15;}
+  :focus-visible{outline:2.5px solid var(--accent);outline-offset:3px;border-radius:6px;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+
+  /* Nav (shared with home) */
+  .nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(160%) blur(14px);-webkit-backdrop-filter:saturate(160%) blur(14px);
+    background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--line);}
+  .nav-in{display:flex;align-items:center;gap:18px;height:62px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;color:var(--ink);text-decoration:none;}
+  .brand .mark{width:30px;height:30px;border-radius:9px;flex:0 0 auto;background:linear-gradient(150deg,var(--accent),var(--accent-2));display:grid;place-items:center;box-shadow:var(--shadow-sm);}
+  .brand .mark svg{width:18px;height:18px;color:#fff;}
+  .nav-links{display:flex;gap:24px;margin-left:auto;align-items:center;}
+  .nav-links a{color:var(--ink-soft);font-weight:600;font-size:15px;text-decoration:none;}
+  .nav-links a:hover{color:var(--ink);}
+  .nav-cta{display:inline-flex;align-items:center;padding:9px 16px;border-radius:999px;font-weight:700;font-size:14px;background:var(--accent);color:#fff;box-shadow:var(--shadow-sm);}
+  .nav-cta:hover{filter:brightness(1.05);}
+  @media (max-width:640px){ .nav-links a.hide-sm{display:none;} }
+
+  /* Document */
+  main{max-width:760px;margin:0 auto;padding:44px 22px 40px;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);}
+  h1{font-size:clamp(30px,5vw,40px);font-weight:840;margin:12px 0 30px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 26px;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+  h2{font-size:18px;margin:0 0 10px;font-weight:800;}
+  p{margin:0 0 12px;} p:last-child{margin-bottom:0;}
+  ul{margin:0;padding-left:20px;} li{margin-bottom:10px;}
+
+  /* Footer (shared with home) */
+  footer.site{border-top:1px solid var(--line);padding:40px 0;color:var(--ink-soft);font-size:14px;margin-top:24px;}
+  .foot-grid{display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;}
+  .foot-links{display:flex;gap:22px;flex-wrap:wrap;}
+  .foot-links a{color:var(--ink-soft);font-weight:650;text-decoration:none;}
+  .foot-links a:hover{color:var(--ink);}
+  .foot-brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--ink);}
+  .foot-meta{margin-top:14px;font-size:13px;}
 </style>
 </head>
 <body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="/" aria-label="Dromeas home">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="1.6" fill="currentColor" stroke="none"/><path d="M5 14l3-3 3 1 2-3"/><path d="M13 9l3 2 2-1"/><path d="M8 12l-1 5"/><path d="M11 12l3 3-1 5"/></svg></span>
+      Dromeas
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/#features" class="hide-sm">Features</a>
+      <a href="privacy.html" class="hide-sm">Privacy</a>
+      <a class="nav-cta" href="mailto:zanon.robert@gmail.com?subject=Notify%20me%20when%20Dromeas%20launches">Get notified</a>
+    </nav>
+  </div>
+</header>
+
 <main>
-  <div class="eyebrow">🏃 Dromeas</div>
+  <div class="eyebrow">Help</div>
   <h1>Support</h1>
 
   <div class="card">
@@ -90,8 +106,29 @@
       <li><strong>Is my data shared with anyone?</strong> No. See the <a href="privacy.html">Privacy Policy</a> for details.</li>
     </ul>
   </div>
-
-  <footer>Dromeas — developed by Roberto Zanon</footer>
 </main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand">
+          <span class="mark" aria-hidden="true" style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,var(--accent),var(--accent-2));display:grid;place-items:center;box-shadow:var(--shadow-sm)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="1.6" fill="#fff" stroke="none"/><path d="M5 14l3-3 3 1 2-3"/><path d="M13 9l3 2 2-1"/><path d="M8 12l-1 5"/><path d="M11 12l3 3-1 5"/></svg>
+          </span>
+          Dromeas
+        </div>
+        <p class="foot-meta">Serious tools for runners, private by design.<br>Built by Roberto Zanon · Athens, Greece.</p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="mailto:zanon.robert@gmail.com">Contact</a>
+      </nav>
+    </div>
+    <p class="foot-meta">© 2026 Roberto Zanon. No ads, no tracking, ever.</p>
+  </div>
+</footer>
 </body>
 </html>
