@@ -333,9 +333,9 @@
   .foot-meta{margin-top:14px;font-size:13px;}
 
   /* ---------- Reveal ---------- */
-  [data-reveal]{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease;}
-  [data-reveal].in{opacity:1;transform:none;}
-  @media (prefers-reduced-motion: reduce){ [data-reveal]{opacity:1 !important;transform:none !important;transition:none;} .live-pill .d,.runner-ring,.route-fg,.cta-note .pulse{animation:none !important;} }
+  .js [data-reveal]{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease;}
+  .js [data-reveal].in{opacity:1;transform:none;}
+  @media (prefers-reduced-motion: reduce){ .js [data-reveal]{opacity:1 !important;transform:none !important;transition:none;} .live-pill .d,.runner-ring,.route-fg,.cta-note .pulse{animation:none !important;} }
 
   /* ---------- Keyframes ---------- */
   @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent);}70%{box-shadow:0 0 0 8px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
@@ -704,6 +704,10 @@
 </footer>
 
 <script>
+  // Progressive enhancement: only arm the reveal (initial opacity:0) once JS runs,
+  // so content is always visible if the script is blocked or rendered statically.
+  document.documentElement.classList.add('js');
+
   // Footer year
   document.getElementById('year').textContent = new Date().getFullYear();
 
