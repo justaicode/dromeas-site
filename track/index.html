@@ -338,6 +338,17 @@ function measAt(f){
   return { temp:forecastAt(PLAN.hourlyWeather,t,"tempC"), humid:forecastAt(PLAN.hourlyWeather,t,"humidity"), gluc:null };
 }
 
+/* HR overlay points: the app-published series (the source device's full recorded
+   trace) when present, else what this viewer accumulated since opening the link. */
+function hrPoints(){
+  const s = LAST && LAST.hr_series;
+  if(Array.isArray(s) && s.length>1){
+    return s.map(p => Array.isArray(p) ? {km:+p[0], bpm:+p[1]} : {km:+(p&&p.km), bpm:+(p&&p.bpm)})
+            .filter(h => isFinite(h.km) && isFinite(h.bpm));
+  }
+  return HRHIST;
+}
+
 /* ------------------------------------------------------------ init / load  */
 async function boot(){
   const token = getToken();
@@ -549,10 +560,13 @@ function drawProfile(km){
   if(SHOW.temp)  ov+=sampledTrace("temp",  f=>measAt(f).temp);
   if(SHOW.humid) ov+=sampledTrace("humid", f=>measAt(f).humid);
   if(SHOW.gluc)  ov+=sampledTrace("gluc",  f=>measAt(f).gluc);
-  if(SHOW.hr && HRHIST.length>1){
-    let d="",on=false;
-    for(const h of HRHIST){ d+=(on?" L ":" M ")+(clamp(h.km/Math.max(TOTKM,1e-6),0,1)*W).toFixed(1)+" "+Ym(h.bpm,MRANGE.hr).toFixed(1); on=true; }
-    ov+=`<path d="${d}" fill="none" stroke="var(--hr)" stroke-width="2" stroke-linejoin="round" opacity=".9"/>`;
+  if(SHOW.hr){
+    const hp = hrPoints();
+    if(hp.length>1){
+      let d="",on=false;
+      for(const h of hp){ d+=(on?" L ":" M ")+(clamp(h.km/Math.max(TOTKM,1e-6),0,1)*W).toFixed(1)+" "+Ym(h.bpm,MRANGE.hr).toFixed(1); on=true; }
+      ov+=`<path d="${d}" fill="none" stroke="var(--hr)" stroke-width="2" stroke-linejoin="round" opacity=".9"/>`;
+    }
   }
 
   svg.innerHTML = `
