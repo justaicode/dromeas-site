@@ -116,23 +116,6 @@
   .profile .me{fill:var(--live);stroke:#fff;stroke-width:2}
   .profile .melabel{fill:var(--text);font:700 11px sans-serif}
 
-  /* Checkpoints */
-  .cps{display:flex;flex-direction:column;gap:2px}
-  .cp-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
-  .cp-row:last-child{border-bottom:0}
-  .cp-row.cp-summary{opacity:.6}
-  .cp-mark{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
-    border:2px solid var(--line);color:var(--faint);font-size:12px;font-weight:800;background:var(--inset)}
-  .cp-row.done .cp-mark{background:var(--ok);border-color:var(--ok);color:#06231a}
-  .cp-row.next .cp-mark{border-color:var(--accent);color:var(--accent2);box-shadow:0 0 0 3px rgba(47,125,246,.18)}
-  .cp-name{font-weight:700}
-  .cp-km{color:var(--faint);font-size:12.5px;font-variant-numeric:tabular-nums}
-  .cp-eta{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums}
-  .cp-eta b{font-weight:800}
-  .cp-eta span{display:block;color:var(--faint);font-size:11.5px}
-  .badge-next{margin-left:8px;font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--accent2);
-    border:1px solid rgba(47,125,246,.5);padding:2px 6px;border-radius:6px;text-transform:uppercase;vertical-align:middle}
-
   .foot{color:var(--faint);font-size:12.5px;text-align:center;margin-top:26px;line-height:1.7}
   .foot .live-age{font-variant-numeric:tabular-nums}
 
@@ -206,10 +189,6 @@
       <svg class="profile" id="profile" viewBox="0 0 1000 150" preserveAspectRatio="none"></svg>
     </div>
 
-    <div class="card" id="cp-card">
-      <h2>Checkpoints <span class="r" id="cp-r"></span></h2>
-      <div class="cps" id="cps"></div>
-    </div>
 
     <div class="foot">
       <span id="age" class="live-age"></span><br/>
@@ -399,14 +378,13 @@ function setupPlan(plan){
   renderPills();
   wirePills();
   initMap();
-  renderCheckpoints(null);
 }
 
 async function refreshPlan(){
   try{
     const token=getToken();
     const plan = await rpc("public_plan", {token});
-    if(plan && plan.raceName){ PLAN=plan; renderCheckpoints(LAST ? LAST.km : null); }
+    if(plan && plan.raceName){ PLAN=plan; }
   }catch(e){/* keep last */}
 }
 
@@ -516,7 +494,6 @@ function render(){
   // Map + profile marker
   updateMap(km);
   drawProfile(km);
-  renderCheckpoints(km, secPerKm);
   updateAge();
 }
 
@@ -641,50 +618,6 @@ function updateMap(km){
   if(!MEMARK){
     MEMARK = L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="pin"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(MAP);
   } else MEMARK.setLatLng(ll);
-}
-
-/* --------------------------------------------------------- checkpoints     */
-function renderCheckpoints(km, secPerKm){
-  const cont=$("cps"); const cps=(PLAN.checkpoints||[]).slice().sort((a,b)=>a.km-b.km);
-  if(!cps.length){ $("cp-card").classList.add("hidden"); return; }
-  const states=PLAN.checkpointStates||{};
-  const isDone = cp => (states[cp.id]&&states[cp.id].complete) || (km!=null && km>=cp.km);
-  const done = cps.filter(isDone);
-  const upcoming = cps.filter(cp=>!isDone(cp));
-  $("cp-r").textContent = `${done.length}/${cps.length} done`;
-  let html="";
-  // Cleared checkpoints collapse into one line — the box above already carries the
-  // count; what a crew needs here is what's still ahead and when.
-  if(done.length){
-    const lastKm = Math.max(...done.map(c=>c.km));
-    html += `<div class="cp-row done cp-summary">
-      <div class="cp-mark">✓</div>
-      <div><div class="cp-name">${done.length} checkpoint${done.length>1?"s":""} cleared</div>
-      <div class="cp-km">through ${lastKm.toFixed(1)} km</div></div>
-    </div>`;
-  }
-  // Upcoming checkpoints, each with distance + rough ETA at the current pace.
-  upcoming.forEach((cp,j)=>{
-    const idx = cps.indexOf(cp);
-    const isNext = j===0;
-    const toGo = km!=null ? Math.max(0,cp.km-km) : null;
-    // "km to go" only needs position, so always show it; the time estimate needs a
-    // valid pace — show that when we have one, so the whole column doesn't blink.
-    const showTime = secPerKm!=null && isFinite(secPerKm) && secPerKm>0;
-    const eta = (toGo!=null)
-      ? `<div class="cp-eta">${showTime?`<b>${fmtDurShort(toGo*secPerKm)}</b>`:""}<span>${toGo.toFixed(1)} km to go</span></div>` : "";
-    html += `<div class="cp-row ${isNext?"next":""}">
-      <div class="cp-mark">${idx+1}</div>
-      <div><div class="cp-name">Checkpoint ${idx+1}${isNext?'<span class="badge-next">Next</span>':''}</div>
-      <div class="cp-km">${cp.km.toFixed(1)} km${cp.pinned?" · 📍":""}</div></div>
-      ${eta}
-    </div>`;
-  });
-  if(!upcoming.length){
-    html += `<div class="cp-row"><div class="cp-mark" style="background:var(--ok);border-color:var(--ok);color:#06231a">🏁</div>
-      <div><div class="cp-name">All checkpoints cleared</div></div></div>`;
-  }
-  cont.innerHTML=html;
 }
 
 /* --------------------------------------------------------------- age       */
