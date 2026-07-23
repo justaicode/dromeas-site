@@ -295,6 +295,8 @@ function forecastAt(hourly, tSec, field){
 let PLAN=null, PTS=[], TOTKM=0, TOTMIN=0, MINE=0, MAXE=0, MAP=null, ROUTE=null, MEMARK=null, CPMARKS=[];
 let LAST=null;         // last telemetry {km,bpm,elapsed_sec,updated_at,started_at,finished_at}
 let AGE_TIMER=null;
+let LAST_PACE=null;    // last valid pace (s/km), held through transient null ticks so the
+let PREV_KM=null;      // projected finish + ETAs don't blink; both reset on a restart
 /* Profile overlays + theme. */
 let HRHIST=[];  // {km,bpm} — accumulated client-side (server keeps only the latest row)
 const SHOW={hr:false,temp:true,humid:false,gluc:false};
@@ -421,7 +423,11 @@ async function tick(){
 
 function raceState(){
   if(!LAST) return "pending";
-  if(LAST.finished_at) return "done";
+  const ms = s => { const t = s ? Date.parse(s) : NaN; return isFinite(t) ? t : null; };
+  const started = ms(LAST.started_at), finished = ms(LAST.finished_at);
+  // A finish only sticks if the run wasn't restarted after it: on a restart the new
+  // startedAt is newer than a lingering finishedAt, so treat that as live, not done.
+  if(finished!=null && !(started!=null && started>finished)) return "done";
   if(LAST.started_at) return "live";
   return "pending";
 }
@@ -446,8 +452,17 @@ function render(){
   $("cur-km").textContent = km!=null ? km.toFixed(1) : "0.0";
   $("pct").textContent = Math.round(pct);
 
-  // Derived
-  const secPerKm = (km!=null && km>0.05 && elapsed!=null) ? elapsed/km : null;
+  // Derived. Detect a restart (km jumped backwards) and clear per-run accumulators so
+  // stale pace/HR from the previous run don't bleed into the new one.
+  if(km!=null){
+    if(PREV_KM!=null && km < PREV_KM - 1){ LAST_PACE=null; HRHIST=[]; }
+    PREV_KM = km;
+  }
+  const rawPace = (km!=null && km>0.05 && elapsed!=null && elapsed>0) ? elapsed/km : null;
+  if(rawPace!=null && isFinite(rawPace) && rawPace>0) LAST_PACE = rawPace;
+  // Hold the last good pace through transient null ticks so the projected finish and
+  // the checkpoint ETAs stay put instead of flickering to "—".
+  const secPerKm = rawPace ?? LAST_PACE;
   const totalSec = (secPerKm!=null && TOTKM) ? secPerKm*TOTKM : null;
   const remainSec = (totalSec!=null && elapsed!=null) ? Math.max(0, totalSec-elapsed) : null;
   const frac = (km!=null && TOTKM) ? clamp(km/TOTKM,0,1) : 0;
@@ -653,8 +668,11 @@ function renderCheckpoints(km, secPerKm){
     const idx = cps.indexOf(cp);
     const isNext = j===0;
     const toGo = km!=null ? Math.max(0,cp.km-km) : null;
-    const eta = (toGo!=null && secPerKm)
-      ? `<div class="cp-eta"><b>${fmtDurShort(toGo*secPerKm)}</b><span>${toGo.toFixed(1)} km to go</span></div>` : "";
+    // "km to go" only needs position, so always show it; the time estimate needs a
+    // valid pace — show that when we have one, so the whole column doesn't blink.
+    const showTime = secPerKm!=null && isFinite(secPerKm) && secPerKm>0;
+    const eta = (toGo!=null)
+      ? `<div class="cp-eta">${showTime?`<b>${fmtDurShort(toGo*secPerKm)}</b>`:""}<span>${toGo.toFixed(1)} km to go</span></div>` : "";
     html += `<div class="cp-row ${isNext?"next":""}">
       <div class="cp-mark">${idx+1}</div>
       <div><div class="cp-name">Checkpoint ${idx+1}${isNext?'<span class="badge-next">Next</span>':''}</div>
