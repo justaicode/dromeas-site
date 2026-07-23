@@ -8,28 +8,47 @@
 <meta name="theme-color" content="#0b1220" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script>
+  /* Resolve the theme before first paint to avoid a flash of the wrong scheme. */
+  (function(){try{
+    var p=localStorage.getItem("dromeas_track_theme")||"system";
+    var r=(p==="light"||p==="dark")?p
+         :((window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark");
+    document.documentElement.setAttribute("data-theme",r);
+  }catch(e){}})();
+</script>
 <style>
   :root{
     --bg:#0b1220; --bg2:#0f1a2e; --card:#131f36; --card2:#182642;
     --line:#22314f; --text:#eaf0fb; --dim:#9fb0cc; --faint:#6b7d9c;
     --accent:#2f7df6; --accent2:#4f9dff; --live:#ff4b57; --ok:#33d69f;
     --temp:#e0851a; --humid:#3389db; --gluc:#7d73dc; --hr:#ff5a7a;
+    --inset:#0c1730; --glow:#16264a;
     --r:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef3fb; --bg2:#e4ecf7; --card:#ffffff; --card2:#f2f7fd;
+    --line:#dae3f1; --text:#101a2c; --dim:#4a5c78; --faint:#8090aa;
+    --accent:#2f7df6; --accent2:#2f7df6; --live:#e5384a; --ok:#1fa97f;
+    --temp:#c9700c; --humid:#2372c0; --gluc:#6a5fd0; --hr:#e5455f;
+    --inset:#eaf1fb; --glow:#d6e5fb;
+    --shadow:0 10px 28px rgba(31,54,92,.12);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
   body{
-    background:radial-gradient(1200px 800px at 50% -10%, #16264a 0%, var(--bg) 55%) fixed, var(--bg);
+    background:radial-gradient(1200px 800px at 50% -10%, var(--glow) 0%, var(--bg) 55%) fixed, var(--bg);
     color:var(--text);
     font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    transition:background-color .2s ease, color .2s ease;
   }
   .wrap{max-width:760px;margin:0 auto;padding:18px 16px 40px}
   a{color:var(--accent2);text-decoration:none}
 
   /* Header */
-  .top{display:flex;align-items:center;gap:12px;margin:6px 2px 18px}
+  .top{display:flex;align-items:center;gap:10px;margin:6px 2px 18px;flex-wrap:wrap}
   .brand{font-weight:800;letter-spacing:.2px;font-size:15px;color:var(--dim)}
   .brand b{color:var(--text)}
   .status{margin-left:auto;display:inline-flex;align-items:center;gap:8px;
@@ -52,13 +71,25 @@
 
   /* Progress bar */
   .prog{margin:0 2px 22px}
-  .prog .track{height:12px;border-radius:999px;background:#0c1730;border:1px solid var(--line);overflow:hidden;position:relative}
+  .prog .track{height:12px;border-radius:999px;background:var(--inset);border:1px solid var(--line);overflow:hidden;position:relative}
   .prog .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;width:0;transition:width .6s ease}
   .prog .meta{display:flex;justify-content:space-between;margin-top:8px;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
   .prog .meta b{color:var(--text)}
 
   /* Stat grid */
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:0 0 20px}
+  .grid{display:grid;gap:12px;margin:0 0 12px}
+  .grid.primary{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .grid.metrics{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:20px}
+  /* Measurement toggle pills over the course profile */
+  .pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;
+    background:var(--inset);border:1px solid var(--line);color:var(--dim);font:700 12px/1 inherit;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+  .pill.on{background:var(--card2);border-color:var(--accent);color:var(--text)}
+  .pdot{width:8px;height:8px;border-radius:50%}
+  /* Light / dark / system control */
+  .theme{margin-left:auto;display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+  .theme button{border:0;background:transparent;color:var(--dim);font:700 12px/1 inherit;padding:5px 8px;min-width:30px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s}
+  .theme button.on{background:var(--card2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px;position:relative;overflow:hidden}
   .stat .k{color:var(--faint);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;align-items:center;gap:6px}
   .stat .v{font-weight:800;font-size:26px;letter-spacing:-.5px;margin-top:6px;font-variant-numeric:tabular-nums;line-height:1.05}
@@ -72,8 +103,8 @@
   .card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);font-weight:800;display:flex;align-items:center;gap:8px}
   .card h2 .r{margin-left:auto;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0;font-size:12.5px}
 
-  #map{height:230px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0c1730}
-  .leaflet-container{background:#0c1730}
+  #map{height:230px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--inset)}
+  .leaflet-container{background:var(--inset)}
   .pin{width:16px;height:16px;border-radius:50%;background:var(--live);border:3px solid #fff;box-shadow:0 0 0 4px rgba(255,75,87,.3),0 2px 6px rgba(0,0,0,.5)}
 
   /* Elevation profile */
@@ -90,7 +121,7 @@
   .cp-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
   .cp-row:last-child{border-bottom:0}
   .cp-mark{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
-    border:2px solid var(--line);color:var(--faint);font-size:12px;font-weight:800;background:#0c1730}
+    border:2px solid var(--line);color:var(--faint);font-size:12px;font-weight:800;background:var(--inset)}
   .cp-row.done .cp-mark{background:var(--ok);border-color:var(--ok);color:#06231a}
   .cp-row.next .cp-mark{border-color:var(--accent);color:var(--accent2);box-shadow:0 0 0 3px rgba(47,125,246,.18)}
   .cp-name{font-weight:700}
@@ -135,6 +166,11 @@
   <div id="app" class="hidden">
     <div class="top">
       <div class="brand"><b>Dromeas</b> · Live</div>
+      <div class="theme" id="theme" role="group" aria-label="Theme">
+        <button type="button" data-t="system" title="Follow system">Auto</button>
+        <button type="button" data-t="light" title="Light" aria-label="Light">☀</button>
+        <button type="button" data-t="dark" title="Dark" aria-label="Dark">☾</button>
+      </div>
       <div id="status" class="status"><span class="dot"></span><span id="status-t">—</span></div>
     </div>
 
@@ -155,7 +191,8 @@
       </div>
     </div>
 
-    <div class="grid" id="stats"></div>
+    <div class="grid primary" id="stats-primary"></div>
+    <div class="grid metrics" id="stats-metrics"></div>
 
     <div class="card" id="map-card">
       <h2>Location <span class="r" id="map-r"></span></h2>
@@ -163,7 +200,8 @@
     </div>
 
     <div class="card">
-      <h2>Course profile</h2>
+      <h2>Course profile <span class="r">tap a pill to overlay</span></h2>
+      <div class="pills" id="prof-pills"></div>
       <svg class="profile" id="profile" viewBox="0 0 1000 150" preserveAspectRatio="none"></svg>
     </div>
 
@@ -256,6 +294,13 @@ function forecastAt(hourly, tSec, field){
 let PLAN=null, PTS=[], TOTKM=0, TOTMIN=0, MINE=0, MAXE=0, MAP=null, ROUTE=null, MEMARK=null, CPMARKS=[];
 let LAST=null;         // last telemetry {km,bpm,elapsed_sec,updated_at,started_at,finished_at}
 let AGE_TIMER=null;
+/* Profile overlays + theme. */
+let HRHIST=[];  // {km,bpm} — accumulated client-side (server keeps only the latest row)
+const SHOW={hr:false,temp:true,humid:false,gluc:false};
+const MRANGE={temp:[-5,45],humid:[0,100],gluc:[3,12],hr:[40,200]};
+const MCOLOR={temp:"--temp",humid:"--humid",gluc:"--gluc",hr:"--hr"};
+const PILLDEFS=[{k:"hr",l:"HR",c:"--hr"},{k:"temp",l:"Temp",c:"--temp"},{k:"humid",l:"Humidity",c:"--humid"},{k:"gluc",l:"Glucose",c:"--gluc"}];
+const THEME_KEY="dromeas_track_theme";
 
 function totalKm(plan){
   if(PTS.length) return PTS[PTS.length-1].distanceKm || plan.distanceKm || 0;
@@ -281,6 +326,15 @@ function posAt(km){
     }
   }
   return PTS[PTS.length-1];
+}
+
+/* Measurement value at course fraction f (0..1): demo curves, or the hourly
+   forecast mapped to predicted arrival time. Glucose is demo-only. */
+function measAt(f){
+  if(PLAN && PLAN.simulatorMode) return { temp:Sim.temperature(f), humid:Sim.humidity(f), gluc:Sim.glucose(f) };
+  const base = (LAST && LAST.started_at) ? Date.parse(LAST.started_at)/1000 : Date.now()/1000;
+  const t = base + f*(TOTMIN*60);
+  return { temp:forecastAt(PLAN.hourlyWeather,t,"tempC"), humid:forecastAt(PLAN.hourlyWeather,t,"humidity"), gluc:null };
 }
 
 /* ------------------------------------------------------------ init / load  */
@@ -328,6 +382,8 @@ function setupPlan(plan){
   $("tot-km").textContent = TOTKM ? TOTKM.toFixed(TOTKM<100?1:0) : "0";
   if(plan.simulatorMode) { const s=$("status"); }
   drawProfile(null);
+  renderPills();
+  wirePills();
   initMap();
   renderCheckpoints(null);
 }
@@ -396,16 +452,32 @@ function render(){
   }
   const hr = LAST ? num(LAST.bpm) : null;
 
-  // Stat cards
-  const cards = [];
-  cards.push(statCard("Pace", secPerKm!=null?fmtPace(secPerKm):"—", "/km", null, "accent"));
-  if(st==="done") cards.push(statCard("Total", fmtDur(elapsed), "", null));
-  else cards.push(statCard("Projected finish", totalSec!=null?fmtDur(totalSec):"—", "", remainSec!=null?`${fmtDurShort(remainSec)} to go`:null));
-  cards.push(statCard("Heart rate", hr!=null?hr:"—", "bpm", null, "", "--hr"));
-  if(temp!=null) cards.push(statCard("Temp", Math.round(temp), "°C", sim?"demo":null, "", "--temp"));
-  if(humid!=null) cards.push(statCard("Humidity", Math.round(humid), "%", sim?"demo":null, "", "--humid"));
-  if(gluc!=null) cards.push(statCard("Glucose", gluc.toFixed(1), "mmol/L", "demo", "", "--gluc"));
-  $("stats").innerHTML = cards.join("");
+  // Headline row — pace, projected finish, distance, checkpoints (all highlighted).
+  const cpsAll = PLAN.checkpoints || [];
+  const cpStates = PLAN.checkpointStates || {};
+  const cpDone = cpsAll.filter(cp => (cpStates[cp.id] && cpStates[cp.id].complete) || (km!=null && km>=cp.km)).length;
+  const kmFmt = (v)=> v==null ? "—" : v.toFixed(TOTKM<100?1:0);
+  const primary = [
+    statCard("Pace", secPerKm!=null?fmtPace(secPerKm):"—", "/km", null, "accent"),
+    st==="done" ? statCard("Total", fmtDur(elapsed), "", null, "accent")
+                : statCard("Projected finish", totalSec!=null?fmtDur(totalSec):"—", "", remainSec!=null?`${fmtDurShort(remainSec)} to go`:null, "accent")
+  ];
+  if(TOTKM) primary.push(statCard("Distance", `${kmFmt(km!=null?km:0)}/${kmFmt(TOTKM)}`, "km", null, "accent"));
+  if(cpsAll.length) primary.push(statCard("Checkpoints", `${cpDone}/${cpsAll.length}`, "", "passed", "accent"));
+  $("stats-primary").innerHTML = primary.join("");
+
+  // Conditions row.
+  const metrics = [ statCard("Heart rate", hr!=null?hr:"—", "bpm", null, "", "--hr") ];
+  if(temp!=null) metrics.push(statCard("Temp", Math.round(temp), "°C", sim?"demo":null, "", "--temp"));
+  if(humid!=null) metrics.push(statCard("Humidity", Math.round(humid), "%", sim?"demo":null, "", "--humid"));
+  if(gluc!=null) metrics.push(statCard("Glucose", gluc.toFixed(1), "mmol/L", "demo", "", "--gluc"));
+  $("stats-metrics").innerHTML = metrics.join("");
+
+  // Accumulate an HR-vs-distance trace for the profile overlay.
+  if(st==="live" && km!=null && hr!=null){
+    const lh=HRHIST[HRHIST.length-1];
+    if(!lh || Math.abs(km-lh.km)>0.02) HRHIST.push({km, bpm:hr});
+  }
 
   // Map + profile marker
   updateMap(km);
@@ -454,6 +526,27 @@ function drawProfile(km){
           <circle class="me" cx="${X(km).toFixed(1)}" cy="${Y(p.elevationM).toFixed(1)}" r="5"/>`;
   }
 
+  // Measurement overlays (toggled by the pills). Each series is normalized to its
+  // own range so they can share the elevation chart's height — same idea as the
+  // in-app Event Chart.
+  const Ym=(v,r)=>H-pad-clamp((v-r[0])/(r[1]-r[0]),0,1)*(H-2*pad);
+  const sampledTrace=(key,valFn)=>{
+    let d="",on=false;
+    for(let i=0;i<=120;i++){ const f=i/120, v=valFn(f);
+      if(v==null||!isFinite(v)){ on=false; continue; }
+      d+=(on?" L ":" M ")+(f*W).toFixed(1)+" "+Ym(v,MRANGE[key]).toFixed(1); on=true; }
+    return d?`<path d="${d}" fill="none" stroke="var(${MCOLOR[key]})" stroke-width="2" stroke-linejoin="round" opacity=".9"/>`:"";
+  };
+  let ov="";
+  if(SHOW.temp)  ov+=sampledTrace("temp",  f=>measAt(f).temp);
+  if(SHOW.humid) ov+=sampledTrace("humid", f=>measAt(f).humid);
+  if(SHOW.gluc)  ov+=sampledTrace("gluc",  f=>measAt(f).gluc);
+  if(SHOW.hr && HRHIST.length>1){
+    let d="",on=false;
+    for(const h of HRHIST){ d+=(on?" L ":" M ")+(clamp(h.km/Math.max(TOTKM,1e-6),0,1)*W).toFixed(1)+" "+Ym(h.bpm,MRANGE.hr).toFixed(1); on=true; }
+    ov+=`<path d="${d}" fill="none" stroke="var(--hr)" stroke-width="2" stroke-linejoin="round" opacity=".9"/>`;
+  }
+
   svg.innerHTML = `
     <defs><linearGradient id="pg" x1="0" x2="0" y1="0" y2="1">
       <stop offset="0" stop-color="#2f7df6" stop-opacity=".38"/>
@@ -461,7 +554,7 @@ function drawProfile(km){
     </linearGradient></defs>
     <path class="fillp" d="${area}"/>
     <path class="linep" d="${line}"/>
-    ${cpm}${me}`;
+    ${ov}${cpm}${me}`;
 }
 
 /* ----------------------------------------------------------------- map     */
@@ -559,6 +652,57 @@ function updateAge(){
   $("map-r").textContent = (st==="live" && !stale) ? "live" : "";
 }
 
+/* ------------------------------------------------------- profile overlays  */
+function measAvail(){
+  const sim=!!(PLAN&&PLAN.simulatorMode);
+  const fc=!!(PLAN&&Array.isArray(PLAN.hourlyWeather)&&PLAN.hourlyWeather.length>1);
+  return { hr:true, temp: sim||fc||num(PLAN&&PLAN.temperatureC)!=null, humid: sim||fc, gluc: sim };
+}
+function renderPills(){
+  const a=measAvail();
+  $("prof-pills").innerHTML = PILLDEFS.filter(p=>a[p.k]).map(p=>
+    `<button type="button" class="pill ${SHOW[p.k]?"on":""}" data-k="${p.k}"><span class="pdot" style="background:var(${p.c})"></span>${p.l}</button>`
+  ).join("");
+}
+let PILLS_WIRED=false;
+function wirePills(){
+  if(PILLS_WIRED) return; PILLS_WIRED=true;
+  $("prof-pills").addEventListener("click",(e)=>{
+    const b=e.target.closest(".pill"); if(!b) return;
+    SHOW[b.dataset.k]=!SHOW[b.dataset.k];
+    renderPills(); drawProfile(LAST?num(LAST.km):null);
+  });
+}
+
+/* ----------------------------------------------------------------- theme   */
+function resolvedTheme(pref){
+  if(pref==="light"||pref==="dark") return pref;
+  return (window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+}
+function applyTheme(){
+  const pref = localStorage.getItem(THEME_KEY) || "system";
+  const res = resolvedTheme(pref);
+  document.documentElement.setAttribute("data-theme", res);
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if(tc) tc.setAttribute("content", res==="light" ? "#eef3fb" : "#0b1220");
+  const box=$("theme");
+  if(box) box.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.t===pref));
+}
+function wireTheme(){
+  const box=$("theme"); if(!box) return;
+  box.addEventListener("click",(e)=>{
+    const b=e.target.closest("button"); if(!b) return;
+    localStorage.setItem(THEME_KEY, b.dataset.t); applyTheme();
+  });
+  if(window.matchMedia){
+    const mq=matchMedia("(prefers-color-scheme: light)");
+    const on=()=>{ if((localStorage.getItem(THEME_KEY)||"system")==="system") applyTheme(); };
+    mq.addEventListener ? mq.addEventListener("change",on) : mq.addListener(on);
+  }
+}
+
+applyTheme();
+wireTheme();
 boot();
 </script>
 </body>
