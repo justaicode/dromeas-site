@@ -138,7 +138,7 @@
   .spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent2);animation:sp .8s linear infinite;margin:0 auto 14px}
   @keyframes sp{to{transform:rotate(360deg)}}
   .hidden{display:none!important}
-  .stale{opacity:.55}
+  .stale{opacity:.82}
 </style>
 </head>
 <body>
@@ -770,7 +770,7 @@ function wireTheme(){
 }
 
 /* ---------------------------------------------- owner-only sim/live toggle  */
-let SIM=false, SIM_T0=null, SIM_TIMER=null, SIM_HR=[];
+let SIM=false, SIM_T0=null, SIM_TIMER=null, SIM_HR=[], SIM_KM0=0;
 const ADMIN_KEY="dromeas_track_admin";
 
 /* No login on this page, so `?admin=1` (remembered in localStorage) reveals the
@@ -800,14 +800,14 @@ function syntheticPlan(){
    at a realistic pace so the pace/finish readouts stay sensible. */
 function simFrame(){
   if(!SIM) return;
-  const DEMO_SECS=600;
-  const el=(Date.now()-SIM_T0)/1000, frac=Math.min(1, el/DEMO_SECS), km=frac*TOTKM;
-  const pace=(TOTMIN*60)/Math.max(TOTKM,1e-6);
-  const bpm=Math.round(138+18*Math.sin(el/9)+8*frac);
-  if(!SIM_HR.length || Math.abs(km-SIM_HR[SIM_HR.length-1][0])>TOTKM/120) SIM_HR.push([+km.toFixed(2), bpm]);
+  const pace=(TOTMIN*60)/Math.max(TOTKM,1e-6);            // realistic s/km for a race of this distance
+  const km=Math.min(TOTKM, SIM_KM0 + (Date.now()-SIM_T0)/1000 / pace);   // advance in real time (1×)
+  const frac=km/Math.max(TOTKM,1e-6);
+  const bpm=Math.round(140+16*Math.sin(km/3)+8*frac);
+  if(!SIM_HR.length || Math.abs(km-SIM_HR[SIM_HR.length-1][0])>TOTKM/160) SIM_HR.push([+km.toFixed(2), bpm]);
   LAST={ km, bpm, elapsed_sec:km*pace, updated_at:new Date().toISOString(),
-         started_at:new Date(SIM_T0).toISOString(),
-         finished_at: frac>=1 ? new Date().toISOString() : null, hr_series:SIM_HR };
+         started_at:new Date(Date.now()-km*pace*1000).toISOString(),
+         finished_at: km>=TOTKM ? new Date().toISOString() : null, hr_series:SIM_HR };
   render();
 }
 
@@ -816,7 +816,11 @@ function setSim(on){
   document.querySelectorAll("#simseg button").forEach(b=>b.classList.toggle("on", (b.dataset.m==="sim")===on));
   if(on){
     if(!PLAN) setupPlan(syntheticPlan());
-    SIM_T0=Date.now(); SIM_HR=[]; PREV_KM=null; LAST_PACE=null; HRHIST=[];
+    SIM_KM0 = 0.25*TOTKM;                 // open ~a quarter in, so the demo has data right away
+    SIM_T0 = Date.now();
+    SIM_HR = [];                          // seed a full HR trace for the covered head-start portion
+    for(let k=0; k<=SIM_KM0; k+=Math.max(TOTKM/140, 0.1)) SIM_HR.push([+k.toFixed(2), Math.round(140+16*Math.sin(k/3)+8*(k/Math.max(TOTKM,1e-6)))]);
+    PREV_KM=null; LAST_PACE=null; HRHIST=[];
     $("loading").classList.add("hidden"); $("error").classList.add("hidden"); $("app").classList.remove("hidden");
     if(SIM_TIMER) clearInterval(SIM_TIMER);
     SIM_TIMER=setInterval(simFrame, 1000); simFrame();
