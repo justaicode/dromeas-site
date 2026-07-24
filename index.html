@@ -161,14 +161,14 @@
   .glow{position:absolute;inset:0;background:radial-gradient(closest-side, color-mix(in srgb,var(--accent) 26%,transparent), transparent 72%);filter:blur(10px);z-index:0;}
   .phone{
     position:relative;z-index:1;
-    width:270px;aspect-ratio:9/19.2;border-radius:42px;
+    width:270px;border-radius:42px;overflow:hidden;
     background:linear-gradient(160deg,#20263a,#0c1018);
-    padding:11px;box-shadow:var(--shadow), 0 0 0 2px rgba(255,255,255,.06) inset;
+    padding:10px;box-shadow:var(--shadow), 0 0 0 2px rgba(255,255,255,.06) inset;
     --rot:2deg;transform:rotate(var(--rot));
     animation:floaty 6.5s ease-in-out infinite;
     translate:var(--px,0px) var(--py,0px);transition:translate .3s ease-out;
   }
-  .phone::after{content:"";position:absolute;top:16px;left:50%;transform:translateX(-50%);width:82px;height:20px;border-radius:12px;background:#0a0d14;z-index:3;}
+  .phone img{display:block;width:100%;height:auto;border-radius:32px;}
   .phone-screen{
     position:relative;height:100%;border-radius:32px;overflow:hidden;
     background:linear-gradient(180deg,#0f1a2e 0%,#0b1220 100%);color:#eaf0fb;
@@ -237,6 +237,14 @@
   .f-copy,.f-media{min-width:0;}            /* let 1fr grid items shrink below content min-size */
   .feature h3,.feature p.f-lead,.f-list li{overflow-wrap:break-word;}
   .f-media{position:relative;}
+  .f-media .frame{margin-inline:auto;}
+  .f-media .frame-phone{max-width:288px;}
+  /* browser window frame (for the web crew-tracking view) */
+  .browser-frame{max-width:460px;margin-inline:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);}
+  .browser-bar{display:flex;align-items:center;gap:7px;padding:10px 14px;background:var(--card-2);border-bottom:1px solid var(--line);}
+  .browser-bar .dot{width:10px;height:10px;border-radius:50%;background:var(--line-strong);flex:0 0 auto;}
+  .browser-bar .url{margin-left:10px;font-size:12px;font-weight:650;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .browser-frame img{display:block;width:100%;height:auto;}
   .media-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:22px;overflow:hidden;}
   .media-card .mc-title{font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .media-card .mc-title .tag{font-size:11px;font-weight:800;color:var(--ink-soft);}
@@ -433,42 +441,11 @@
       </div>
     </div>
 
-    <!-- Hero device mock: stylised live-tracking screen (not a real screenshot) -->
+    <!-- Hero: real iPhone live-race screenshot in a floating phone -->
     <div class="hero-visual" data-reveal>
       <div class="glow" aria-hidden="true"></div>
-      <div class="phone" role="img" aria-label="Illustration of the Dromeas live race-tracking screen showing a route, pace, heart rate and temperature.">
-        <div class="phone-screen">
-          <div class="scr-top">
-            <span class="scr-brand"><b>Dromeas</b> · live</span>
-            <span class="live-pill"><span class="d"></span>LIVE</span>
-          </div>
-          <div class="scr-map">
-            <svg viewBox="0 0 240 300" preserveAspectRatio="none" aria-hidden="true">
-              <path class="route-bg" d="M24 250 C 60 210, 40 150, 90 140 S 150 120, 150 80 S 200 60, 214 40"/>
-              <path class="route-fg" id="routeFg" d="M24 250 C 60 210, 40 150, 90 140 S 150 120, 150 80 S 200 60, 214 40"/>
-              <circle class="runner-ring" id="runnerRing" cx="150" cy="80" r="5"/>
-              <circle class="runner" id="runnerDot" cx="150" cy="80" r="5.5"/>
-            </svg>
-          </div>
-          <div class="scr-metrics">
-            <div class="mtile"><div class="k">PACE</div><div class="v">4:32<small>/km</small></div></div>
-            <div class="mtile"><div class="k" style="color:#ff6f92">HR</div><div class="v"><span id="mHR">148</span></div></div>
-            <div class="mtile"><div class="k" style="color:#e0851a">TEMP</div><div class="v"><span id="mTemp">26</span><small>°C</small></div></div>
-          </div>
-          <div class="scr-foot">Spartathlon · 78.4 / 246 km · CP 24</div>
-        </div>
-      </div>
-      <div class="float-chip chip-1" aria-hidden="true">
-        <span class="ic" style="background:linear-gradient(150deg,#18a06e,#33d69f)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-        </span>
-        Fuel on time<small>Gel · CP 24</small>
-      </div>
-      <div class="float-chip chip-2" aria-hidden="true">
-        <span class="ic" style="background:linear-gradient(150deg,#2563eb,#4f9dff)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-9.3-5"/><path d="M6 16a6 6 0 0 0 9.3 5"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg>
-        </span>
-        Crew watching<small>3 following live</small>
+      <div class="phone" role="img" aria-label="The Dromeas live race screen on iPhone — elapsed time, live heart rate, GPS, weather conditions and the next checkpoint.">
+        <img src="screenshots/iphone-live.jpg" width="820" height="1782" alt="">
       </div>
     </div>
   </div>
@@ -509,15 +486,7 @@
         </ul>
       </div>
       <div class="f-media">
-        <div class="media-card" aria-hidden="true">
-          <div class="mc-title">Pace calculator <span class="tag">10 km</span></div>
-          <div class="calc-row"><span class="lab">Target time</span><span class="val">42:30</span></div>
-          <div class="calc-row"><span class="lab">Pace</span><span class="val">4:15 <small>/km</small></span></div>
-          <div class="calc-row"><span class="lab">Speed</span><span class="val">14.1 <small>km/h</small></span></div>
-          <div class="pill-set">
-            <span class="p">1 km · 4:15</span><span class="p on">5 km · 21:15</span><span class="p">8 km · 34:00</span><span class="p">10 km · 42:30</span>
-          </div>
-        </div>
+        <div class="frame frame-phone"><img src="screenshots/iphone-pace.jpg" width="820" height="1782" loading="lazy" decoding="async" alt="Dromeas pace calculator on iPhone: a 5 km distance and 25-minute target giving a 5:00 per-kilometre pace, with a splits table."></div>
       </div>
     </div>
 
@@ -537,44 +506,70 @@
         </ul>
       </div>
       <div class="f-media">
-        <div class="media-card" aria-hidden="true">
-          <div class="mc-title">Fuelling plan <span class="tag">Spartathlon</span></div>
-          <div class="ckpt"><div class="rail"><span class="node"></span><span class="line"></span></div><div class="body"><div class="cp-top">CP 12 · Corinth <span class="km">81 km</span></div><div class="macros"><span><i style="background:#d17812"></i>90g carbs</span><span><i style="background:#3389db"></i>700ml</span><span><i style="background:#7166cf"></i>50mg caf</span></div></div></div>
-          <div class="ckpt"><div class="rail"><span class="node"></span><span class="line"></span></div><div class="body"><div class="cp-top">CP 24 · Nemea <span class="km">124 km</span></div><div class="macros"><span><i style="background:#d17812"></i>80g carbs</span><span><i style="background:#3389db"></i>600ml</span><span><i style="background:#e8467a"></i>500mg Na</span></div></div></div>
-          <div class="ckpt"><div class="rail"><span class="node"></span><span class="line"></span></div><div class="body"><div class="cp-top">CP 35 · Lyrkeia <span class="km">159 km</span></div><div class="macros"><span><i style="background:#d17812"></i>90g carbs</span><span><i style="background:#3389db"></i>750ml</span><span><i style="background:#7166cf"></i>75mg caf</span></div></div></div>
-        </div>
+        <div class="frame frame-phone"><img src="screenshots/iphone-fuelling.jpg" width="820" height="1782" loading="lazy" decoding="async" alt="Dromeas race fuelling planner on iPhone listing water, gel, sodium tab and caffeine gel with their carbohydrate, sodium and caffeine doses."></div>
       </div>
     </div>
 
-    <!-- Feature 3: Live telemetry + crew -->
+    <!-- Feature 3: Live telemetry -->
     <div class="feature" data-reveal>
       <div class="f-copy">
         <div class="f-icon" style="background:linear-gradient(150deg,#ff4b57,#ff8a5b)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.2"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4M3.5 3.5a12 12 0 0 0 0 17M20.5 3.5a12 12 0 0 1 0 17"/></svg>
         </div>
-        <h3>Live race &amp; crew tracking</h3>
-        <p class="f-lead">Turn your phone into race telemetry — and give the people who care a link to watch it happen.</p>
+        <h3>Race with live telemetry</h3>
+        <p class="f-lead">Turn your phone into a race computer. Every number updates in real time — so you always know exactly where you stand.</p>
         <ul class="f-list">
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> HR (BLE strap), GPS, temperature, humidity &amp; CGM glucose</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> A public link so friends &amp; family follow you in real time</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Spectator mode across your own devices</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Token-gated and private — you decide who gets the link</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <strong>Heart rate, pace &amp; effort</strong> — live, every second (BLE strap + GPS)</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <strong>Temperature, humidity &amp; CGM glucose</strong> as conditions change</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Distance, projected finish &amp; time to the next checkpoint</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Open any checkpoint to see and adjust its fuel on the move</li>
         </ul>
       </div>
       <div class="f-media">
-        <div class="media-card" aria-hidden="true">
-          <div class="mc-title">Live telemetry <span class="tag" style="color:#ff4b57">● REC</span></div>
-          <div class="telem">
-            <div class="t"><div class="tk" style="color:#e8467a">Heart rate</div><div class="tv">148 <small>bpm</small></div>
-              <svg class="spark" viewBox="0 0 120 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,18 15,16 30,19 45,10 60,20 75,9 90,17 105,12 120,15" fill="none" stroke="#e8467a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <div class="t"><div class="tk" style="color:#3389db">Pace</div><div class="tv">4:32 <small>/km</small></div>
-              <svg class="spark" viewBox="0 0 120 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,14 15,15 30,13 45,16 60,12 75,14 90,11 105,13 120,12" fill="none" stroke="#3389db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <div class="t"><div class="tk" style="color:#d17812">Temp</div><div class="tv">26 <small>°C</small></div></div>
-            <div class="t"><div class="tk" style="color:#7166cf">Glucose</div><div class="tv">6.1 <small>mmol/L</small></div></div>
-          </div>
+        <div class="frame frame-tablet"><img src="screenshots/ipad-race.jpg" width="1700" height="1172" loading="lazy" decoding="async" alt="Dromeas live race tracking on iPad: elapsed time, live heart rate, glucose and weather conditions, a checkpoint fuelling schedule, and a full activity chart with the elevation profile and heart-rate, temperature, humidity and glucose overlays."></div>
+      </div>
+    </div>
+
+    <!-- Feature 4: Crew tracking (shareable web link) -->
+    <div class="feature rev" data-reveal>
+      <div class="f-copy">
+        <div class="f-icon" style="background:linear-gradient(150deg,#2563eb,#4f9dff)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
         </div>
+        <h3>Let your crew follow along — live</h3>
+        <p class="f-lead">Copy one link and send it to anyone. They open it in a normal web browser — no app, no account — and watch your race unfold in real time.</p>
+        <ul class="f-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Your <strong>live position</strong> on the map, pace &amp; projected finish</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Heart rate, weather conditions &amp; every checkpoint as you pass it</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Works in any phone or laptop browser — nothing to install</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Token-gated &amp; private — you choose who gets the link, and can stop anytime</li>
+        </ul>
+      </div>
+      <div class="f-media">
+        <div class="browser-frame">
+          <div class="browser-bar" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">dromeas.app/track</span></div>
+          <img src="screenshots/track-crew.jpg" width="1400" height="2012" loading="lazy" decoding="async" alt="A crew member's live tracking page open in a web browser: the runner's position on a map of the Athens-to-Marathon route, with elapsed time, pace, projected finish, heart rate, temperature, humidity, glucose and an activity chart.">
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 5: In-race AI assistant -->
+    <div class="feature" data-reveal>
+      <div class="f-copy">
+        <div class="f-icon" style="background:linear-gradient(150deg,#7166cf,#a78bfa)">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.2L21 9l-5 4.2L17.5 20 12 16.3 6.5 20 8 13.2 3 9l6.6-.8z"/></svg>
+        </div>
+        <h3>An AI assistant, right there in the race</h3>
+        <p class="f-lead">Something feels off at km 30? Ask. It watches your live telemetry and tells you what's likely going on — and what to do about it.</p>
+        <ul class="f-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Reads your live heart rate, fuelling rate &amp; conditions</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Tap a symptom — cramp, dizzy, can't eat — or just type how you feel</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Practical, specific guidance in the moment — not generic tips</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Private by design — nothing about your race is sold or shared</li>
+        </ul>
+      </div>
+      <div class="f-media">
+        <div class="frame frame-phone"><img src="screenshots/iphone-assistant.jpg" width="820" height="1782" loading="lazy" decoding="async" alt="Dromeas in-race AI 'Race assistant' on iPhone: it shows live heart rate and fuelling rate, and answers a 'Thirsty' prompt with specific hydration advice for the conditions."></div>
       </div>
     </div>
   </div>
@@ -600,15 +595,7 @@
         </ul>
       </div>
       <div class="f-media">
-        <div class="media-card" aria-hidden="true">
-          <div class="mc-title">Marathon plan · Week 9 <span class="tag">Build</span></div>
-          <div class="plan-head">
-            <span class="phase-tab">Base</span><span class="phase-tab on">Build</span><span class="phase-tab">Peak</span><span class="phase-tab">Taper</span>
-          </div>
-          <div class="day"><span class="dd">TUE</span><span class="dt">Double threshold<small>5×6min @ 3:58 · 2×10min @ 4:05</small></span><span class="load thr">THR</span></div>
-          <div class="day"><span class="dd">THU</span><span class="dt">Easy + strides<small>60min @ 5:10 · 6×20s</small></span><span class="load easy">EASY</span></div>
-          <div class="day"><span class="dd">SAT</span><span class="dt">Long run w/ finish<small>32 km, last 6 @ MP</small></span><span class="load hard">KEY</span></div>
-        </div>
+        <div class="frame frame-phone"><img src="screenshots/iphone-coach-plan.jpg" width="820" height="1782" loading="lazy" decoding="async" alt="Dromeas AI Coach plan on iPhone: a 13-week Athens Marathon plan (Norwegian method) with a day-by-day calendar of threshold, recovery, easy and long-run sessions."></div>
       </div>
     </div>
   </div>
