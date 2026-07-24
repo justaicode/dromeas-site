@@ -1,2 +1,5 @@
 # Internal build/handoff notes — kept locally, never deployed to the public site
 /HANDOFF.md
+
+# Full-resolution source screenshots — kept locally for App Store use; the site serves the .jpg versions
+/screenshots/*.png

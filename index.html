@@ -164,7 +164,9 @@
     width:270px;aspect-ratio:9/19.2;border-radius:42px;
     background:linear-gradient(160deg,#20263a,#0c1018);
     padding:11px;box-shadow:var(--shadow), 0 0 0 2px rgba(255,255,255,.06) inset;
-    transform:rotate(2deg);
+    --rot:2deg;transform:rotate(var(--rot));
+    animation:floaty 6.5s ease-in-out infinite;
+    translate:var(--px,0px) var(--py,0px);transition:translate .3s ease-out;
   }
   .phone::after{content:"";position:absolute;top:16px;left:50%;transform:translateX(-50%);width:82px;height:20px;border-radius:12px;background:#0a0d14;z-index:3;}
   .phone-screen{
@@ -187,7 +189,7 @@
   .scr-map svg{position:absolute;inset:0;width:100%;height:100%;}
   .route-bg{fill:none;stroke:rgba(255,255,255,.10);stroke-width:5;stroke-linecap:round;}
   .route-fg{fill:none;stroke:#4f9dff;stroke-width:3.5;stroke-linecap:round;
-    stroke-dasharray:210;stroke-dashoffset:70;filter:drop-shadow(0 0 4px rgba(79,157,255,.55));}
+    stroke-dasharray:600;stroke-dashoffset:600;filter:drop-shadow(0 0 4px rgba(79,157,255,.55));}
   .runner{fill:#ff4b57;}
   .runner-ring{fill:none;stroke:#ff4b57;stroke-width:2;opacity:.6;animation:ring 1.8s ease-out infinite;transform-origin:center;transform-box:fill-box;}
   .scr-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px 12px 6px;}
@@ -203,8 +205,8 @@
   }
   .float-chip .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:0 0 auto;}
   .float-chip small{display:block;font-weight:600;color:var(--ink-soft);font-size:11px;}
-  .chip-1{top:60px;left:-6px;transform:rotate(-3deg);}
-  .chip-2{bottom:70px;right:-10px;transform:rotate(2deg);}
+  .chip-1{top:60px;left:-6px;--rot:-3deg;transform:rotate(var(--rot));animation:floaty 5.5s ease-in-out infinite .3s;translate:calc(var(--px,0px)*1.7) calc(var(--py,0px)*1.7);transition:translate .3s ease-out;}
+  .chip-2{bottom:70px;right:-10px;--rot:2deg;transform:rotate(var(--rot));animation:floaty 6s ease-in-out infinite .9s;translate:calc(var(--px,0px)*1.4) calc(var(--py,0px)*1.4);transition:translate .3s ease-out;}
 
   /* ---------- Trust strip ---------- */
   .trust{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:26px 0 6px;}
@@ -291,22 +293,23 @@
   .p-card h3{font-size:17px;font-weight:800;margin:0 0 7px;}
   .p-card p{margin:0;color:var(--ink-soft);font-size:14.5px;}
 
-  /* ---------- Screenshot gallery (placeholders) ---------- */
-  .shots{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:8px;}
-  .shot figure{margin:0;}
-  /* PLACEHOLDER phone frame — replace the .shot-ph div with <img src="screenshots/xxx.png" alt="…"> when real shots exist. */
-  .shot-ph{
-    aspect-ratio:9/19;border-radius:26px;border:1px solid var(--line);
-    background:
-      repeating-linear-gradient(135deg, color-mix(in srgb,var(--accent) 6%,transparent) 0 14px, transparent 14px 28px),
-      var(--card);
-    display:grid;place-items:center;text-align:center;color:var(--ink-soft);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
-  }
-  .shot-ph .ph-inner{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;}
-  .shot-ph .ph-icon{width:34px;height:34px;opacity:.7;color:var(--accent);}
-  .shot-ph .ph-t{font-size:12.5px;font-weight:750;}
-  .shot figcaption{text-align:center;margin-top:12px;font-weight:700;font-size:14px;}
-  .shot figcaption small{display:block;color:var(--ink-soft);font-weight:600;font-size:12.5px;margin-top:2px;}
+  /* ---------- Device showcase (real screenshots) ---------- */
+  .devices{margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:44px;}
+  .dev{margin:0;}
+  .dev figcaption{text-align:center;margin-top:16px;font-weight:750;font-size:15px;}
+  .dev figcaption small{display:block;color:var(--ink-soft);font-weight:600;font-size:13px;margin-top:2px;}
+  .frame{background:linear-gradient(160deg,#232a3a,#0c0e14);border:1px solid rgba(255,255,255,.10);
+    box-shadow:var(--shadow);overflow:hidden;}
+  .frame img{display:block;width:100%;height:auto;}
+  .dev-tablet{width:100%;max-width:940px;}
+  .frame-tablet{padding:14px;border-radius:30px;}
+  .frame-tablet img{border-radius:15px;}
+  .dev-phones{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;width:100%;max-width:900px;justify-items:center;}
+  .dev-phone{display:flex;flex-direction:column;align-items:center;width:100%;}
+  .dev-phone .frame{width:100%;max-width:266px;}
+  .frame-phone{padding:9px;border-radius:36px;}
+  .frame-phone img{border-radius:28px;}
+  @media (max-width:640px){ .dev-phones{grid-template-columns:1fr;max-width:300px;gap:34px;} }
 
   /* ---------- Platforms strip ---------- */
   .everywhere{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:36px;}
@@ -341,6 +344,28 @@
   @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent);}70%{box-shadow:0 0 0 8px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
   @keyframes pulse-red{0%{box-shadow:0 0 0 0 rgba(255,75,87,.6);}70%{box-shadow:0 0 0 7px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
   @keyframes ring{0%{r:5;opacity:.7;}100%{r:16;opacity:0;}}
+
+  /* ---------- Hero motion ---------- */
+  .hero{position:relative;overflow:hidden;}
+  .hero > .wrap{position:relative;z-index:1;}
+  .hero-aurora{position:absolute;inset:-15% -10% auto -10%;height:135%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(38% 44% at 22% 32%, color-mix(in srgb,var(--accent) 30%,transparent), transparent 70%),
+      radial-gradient(34% 40% at 80% 22%, color-mix(in srgb,var(--accent-2) 26%,transparent), transparent 70%),
+      radial-gradient(42% 44% at 60% 74%, rgba(255,75,87,.15), transparent 72%);
+    filter:blur(52px);opacity:.6;animation:aurora 22s ease-in-out infinite alternate;}
+  .hero-visual{--px:0px;--py:0px;}
+  @keyframes floaty{0%,100%{transform:rotate(var(--rot)) translateY(0);}50%{transform:rotate(var(--rot)) translateY(-9px);}}
+  @keyframes aurora{0%{transform:translate3d(-2%,-1%,0) scale(1);}50%{transform:translate3d(3%,2%,0) scale(1.08);}100%{transform:translate3d(-1%,3%,0) scale(1.04);}}
+  .btn-primary{position:relative;overflow:hidden;}
+  .btn-primary::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-18deg);transition:left .6s ease;}
+  .btn-primary:hover::after{left:140%;}
+  @media (prefers-reduced-motion: reduce){
+    .hero-aurora{animation:none;}
+    .phone,.chip-1,.chip-2{animation:none;}
+    .btn-primary::after{display:none;}
+  }
 
   /* ---------- Responsive ---------- */
   @media (max-width:900px){
@@ -384,6 +409,7 @@
 <main>
 <!-- ======================= HERO ======================= -->
 <section class="hero">
+  <div class="hero-aurora" aria-hidden="true"></div>
   <div class="wrap hero-grid">
     <div class="hero-copy" data-reveal>
       <span class="eyebrow">🏃 Private by design</span>
@@ -419,15 +445,15 @@
           <div class="scr-map">
             <svg viewBox="0 0 240 300" preserveAspectRatio="none" aria-hidden="true">
               <path class="route-bg" d="M24 250 C 60 210, 40 150, 90 140 S 150 120, 150 80 S 200 60, 214 40"/>
-              <path class="route-fg" d="M24 250 C 60 210, 40 150, 90 140 S 150 120, 150 80 S 200 60, 214 40"/>
-              <circle class="runner-ring" cx="150" cy="80" r="5"/>
-              <circle class="runner" cx="150" cy="80" r="5.5"/>
+              <path class="route-fg" id="routeFg" d="M24 250 C 60 210, 40 150, 90 140 S 150 120, 150 80 S 200 60, 214 40"/>
+              <circle class="runner-ring" id="runnerRing" cx="150" cy="80" r="5"/>
+              <circle class="runner" id="runnerDot" cx="150" cy="80" r="5.5"/>
             </svg>
           </div>
           <div class="scr-metrics">
             <div class="mtile"><div class="k">PACE</div><div class="v">4:32<small>/km</small></div></div>
-            <div class="mtile"><div class="k" style="color:#ff6f92">HR</div><div class="v">148</div></div>
-            <div class="mtile"><div class="k" style="color:#e0851a">TEMP</div><div class="v">26<small>°C</small></div></div>
+            <div class="mtile"><div class="k" style="color:#ff6f92">HR</div><div class="v"><span id="mHR">148</span></div></div>
+            <div class="mtile"><div class="k" style="color:#e0851a">TEMP</div><div class="v"><span id="mTemp">26</span><small>°C</small></div></div>
           </div>
           <div class="scr-foot">Spartathlon · 78.4 / 246 km · CP 24</div>
         </div>
@@ -618,32 +644,37 @@
   </div>
 </section>
 
-<!-- ======================= SCREENSHOTS (placeholders) ======================= -->
-<section class="section band">
+<!-- ======================= SCREENSHOTS ======================= -->
+<section class="section band" id="gallery">
   <div class="wrap">
     <div class="section-head" data-reveal>
       <span class="eyebrow">A look inside</span>
-      <h2>Made to be lived with</h2>
-      <p>Real screenshots are on the way. Here's what each screen covers.</p>
+      <h2>See it on race day</h2>
+      <p>Real screens from the app — on iPhone and iPad.</p>
     </div>
-    <!-- SCREENSHOT SLOTS — replace each .shot-ph block with <img src="screenshots/<name>.png" alt="…"> once real captures exist. -->
-    <div class="shots">
-      <figure class="shot" data-reveal>
-        <div class="shot-ph"><div class="ph-inner"><svg class="ph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2.5"/><line x1="8" y1="7" x2="16" y2="7"/></svg><span class="ph-t">Screenshot<br>coming soon</span></div></div>
-        <figcaption>Pace &amp; splits<small>Calculators</small></figcaption>
+    <div class="devices">
+      <!-- iPad hero (landscape) -->
+      <figure class="dev dev-tablet" data-reveal>
+        <div class="frame frame-tablet">
+          <img src="screenshots/ipad-race.jpg" width="1700" height="1172" loading="lazy" decoding="async" alt="Dromeas live race tracking on iPad: elapsed time, live heart rate, glucose and weather conditions, a checkpoint fuelling schedule, and a full activity chart showing the elevation profile with heart-rate, temperature, humidity and glucose overlays.">
+        </div>
+        <figcaption>Live race command centre<small>iPad · race day</small></figcaption>
       </figure>
-      <figure class="shot" data-reveal>
-        <div class="shot-ph"><div class="ph-inner"><svg class="ph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg><span class="ph-t">Screenshot<br>coming soon</span></div></div>
-        <figcaption>Fuelling plan<small>Race planner</small></figcaption>
-      </figure>
-      <figure class="shot" data-reveal>
-        <div class="shot-ph"><div class="ph-inner"><svg class="ph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/></svg><span class="ph-t">Screenshot<br>coming soon</span></div></div>
-        <figcaption>Live telemetry<small>Race day</small></figcaption>
-      </figure>
-      <figure class="shot" data-reveal>
-        <div class="shot-ph"><div class="ph-inner"><svg class="ph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l2.4 6.2L21 9l-5 4.2L17.5 20 12 16.3 6.5 20 8 13.2 3 9l6.6-.8z"/></svg><span class="ph-t">Screenshot<br>coming soon</span></div></div>
-        <figcaption>AI Coach plan<small>Training</small></figcaption>
-      </figure>
+      <!-- iPhone trio (portrait) -->
+      <div class="dev-phones">
+        <figure class="dev dev-phone" data-reveal>
+          <div class="frame frame-phone"><img src="screenshots/iphone-pace.jpg" width="820" height="1782" loading="lazy" decoding="async" alt="Dromeas pace calculator on iPhone: a 5 km distance and 25-minute target giving a 5:00 per kilometre pace, with a splits table."></div>
+          <figcaption>Pace &amp; splits<small>Calculators</small></figcaption>
+        </figure>
+        <figure class="dev dev-phone" data-reveal>
+          <div class="frame frame-phone"><img src="screenshots/iphone-fuelling.jpg" width="820" height="1782" loading="lazy" decoding="async" alt="Dromeas race fuelling planner on iPhone listing water, gel, sodium tab and caffeine gel with their carbohydrate, sodium and caffeine doses."></div>
+          <figcaption>Fuelling planner<small>Race planner</small></figcaption>
+        </figure>
+        <figure class="dev dev-phone" data-reveal>
+          <div class="frame frame-phone"><img src="screenshots/iphone-coach.jpg" width="820" height="1782" loading="lazy" decoding="async" alt="Dromeas AI Coach on iPhone: a personalised, periodised training plan with a day-by-day calendar and paces set from your fitness."></div>
+          <figcaption>AI Coach<small>Training</small></figcaption>
+        </figure>
+      </div>
     </div>
   </div>
 </section>
@@ -728,6 +759,65 @@
   } else {
     items.forEach(function(el){ el.classList.add('in'); });
   }
+
+  // ---------- Hero animations ----------
+  (function(){
+    // Route draws in + runner travels along the path
+    var routeFg = document.getElementById('routeFg'),
+        dot = document.getElementById('runnerDot'),
+        ring = document.getElementById('runnerRing');
+    if (routeFg && dot && ring && routeFg.getTotalLength){
+      var len = routeFg.getTotalLength();
+      routeFg.style.strokeDasharray = len;
+      var END = 0.75;
+      var place = function(p){
+        routeFg.style.strokeDashoffset = len * (1 - p);
+        var pt = routeFg.getPointAtLength(len * p);
+        dot.setAttribute('cx', pt.x); dot.setAttribute('cy', pt.y);
+        ring.setAttribute('cx', pt.x); ring.setAttribute('cy', pt.y);
+      };
+      if (reduce){ place(END); }
+      else {
+        routeFg.style.strokeDashoffset = len; place(0.001);
+        var dur = 2600, t0 = null, ease = function(x){ return 1 - Math.pow(1 - x, 3); };
+        var step = function(ts){ if(!t0) t0 = ts; var k = Math.min(1, (ts - t0) / dur);
+          place(0.001 + ease(k) * (END - 0.001)); if (k < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      }
+    }
+
+    // Count-up metrics, then a subtle live HR flicker
+    var countUp = function(el, to, dur){
+      if (!el) return;
+      if (reduce){ el.textContent = String(to); return; }
+      var t0 = null;
+      var step = function(ts){ if(!t0) t0 = ts; var k = Math.min(1, (ts - t0) / dur);
+        el.textContent = String(Math.round((1 - Math.pow(1 - k, 3)) * to)); if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    };
+    var hr = document.getElementById('mHR');
+    countUp(hr, 148, 1500); countUp(document.getElementById('mTemp'), 26, 1400);
+    if (hr && !reduce){
+      setTimeout(function(){ setInterval(function(){
+        hr.textContent = String(148 + (Math.floor(Math.random() * 5) - 2));
+      }, 1500); }, 1800);
+    }
+
+    // Subtle mouse parallax (fine pointers only)
+    var hero = document.querySelector('.hero'), hv = document.querySelector('.hero-visual');
+    if (hero && hv && !reduce && window.matchMedia('(pointer:fine)').matches){
+      hero.addEventListener('mousemove', function(e){
+        var r = hero.getBoundingClientRect();
+        var dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+        var dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+        hv.style.setProperty('--px', (dx * 7).toFixed(1) + 'px');
+        hv.style.setProperty('--py', (dy * 7).toFixed(1) + 'px');
+      }, {passive:true});
+      hero.addEventListener('mouseleave', function(){
+        hv.style.setProperty('--px', '0px'); hv.style.setProperty('--py', '0px');
+      });
+    }
+  })();
 </script>
 </body>
 </html>
