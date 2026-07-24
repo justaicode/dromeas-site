@@ -97,6 +97,8 @@
   .stat .sub2{color:var(--faint);font-size:12px;margin-top:3px;font-variant-numeric:tabular-nums}
   .stat .ic{width:8px;height:8px;border-radius:50%}
   .stat.accent{background:linear-gradient(180deg,var(--card2),var(--card))}
+  .cardpin{position:absolute;top:7px;right:7px;z-index:2;font-size:15px;line-height:1;text-decoration:none;padding:4px;border-radius:8px;opacity:.9}
+  .cardpin:active{opacity:.55}
 
   /* Cards */
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:0 0 16px;box-shadow:var(--shadow)}
@@ -109,6 +111,9 @@
 
   /* Elevation profile */
   .profile{width:100%;height:150px;display:block}
+  .profwrap{position:relative;touch-action:none}
+  .scrubtip{position:absolute;top:4px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:5px 9px;font:700 12px/1.35 inherit;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow);z-index:5}
+  .scrubtip.hidden{display:none}
   .profile .fillp{fill:url(#pg)}
   .profile .linep{fill:none;stroke:var(--accent2);stroke-width:2}
   .profile .cp{fill:var(--faint)}
@@ -117,6 +122,12 @@
   .profile .melabel{fill:var(--text);font:700 11px sans-serif}
 
   .foot{color:var(--faint);font-size:12.5px;text-align:center;margin-top:26px;line-height:1.7}
+  .adminbar{display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0 30px}
+  .adminbar.hidden{display:none}
+  .adminlbl{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+  .seg button{border:0;background:transparent;color:var(--dim);font:700 12px/1 inherit;padding:6px 12px;border-radius:999px;cursor:pointer}
+  .seg button.on{background:var(--card2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
   .foot .live-age{font-variant-numeric:tabular-nums}
 
   /* States */
@@ -184,15 +195,26 @@
     </div>
 
     <div class="card">
-      <h2>Course profile <span class="r">tap a pill to overlay</span></h2>
+      <h2>Course profile <span class="r">press &amp; hold to inspect</span></h2>
       <div class="pills" id="prof-pills"></div>
-      <svg class="profile" id="profile" viewBox="0 0 1000 150" preserveAspectRatio="none"></svg>
+      <div class="profwrap">
+        <svg class="profile" id="profile" viewBox="0 0 1000 150" preserveAspectRatio="none"></svg>
+        <div class="scrubtip hidden" id="scrubtip"></div>
+      </div>
     </div>
 
 
     <div class="foot">
       <span id="age" class="live-age"></span><br/>
       Powered by <b>Dromeas</b> · Live race tracking
+    </div>
+
+    <div class="adminbar hidden" id="adminbar">
+      <span class="adminlbl">Owner</span>
+      <div class="seg" id="simseg">
+        <button type="button" data-m="live">Live</button>
+        <button type="button" data-m="sim">Simulation</button>
+      </div>
     </div>
   </div>
 </div>
@@ -276,6 +298,7 @@ let LAST=null;         // last telemetry {km,bpm,elapsed_sec,updated_at,started_
 let AGE_TIMER=null;
 let LAST_PACE=null;    // last valid pace (s/km), held through transient null ticks so the
 let PREV_KM=null;      // projected finish + ETAs don't blink; both reset on a restart
+let SCRUB=null, SCRUB_WIRED=false;   // press-and-hold profile scrubber (0..1 course fraction)
 /* Profile overlays + theme. */
 let HRHIST=[];  // {km,bpm} — accumulated client-side (server keeps only the latest row)
 const SHOW={hr:false,temp:true,humid:false,gluc:false};
@@ -313,7 +336,7 @@ function posAt(km){
 /* Measurement value at course fraction f (0..1): demo curves, or the hourly
    forecast mapped to predicted arrival time. Glucose is demo-only. */
 function measAt(f){
-  if(PLAN && PLAN.simulatorMode) return { temp:Sim.temperature(f), humid:Sim.humidity(f), gluc:Sim.glucose(f) };
+  if(SIM || (PLAN && PLAN.simulatorMode)) return { temp:Sim.temperature(f), humid:Sim.humidity(f), gluc:Sim.glucose(f) };
   const base = (LAST && LAST.started_at) ? Date.parse(LAST.started_at)/1000 : Date.now()/1000;
   const t = base + f*(TOTMIN*60);
   return { temp:forecastAt(PLAN.hourlyWeather,t,"tempC"), humid:forecastAt(PLAN.hourlyWeather,t,"humidity"), gluc:null };
@@ -328,6 +351,42 @@ function hrPoints(){
             .filter(h => isFinite(h.km) && isFinite(h.bpm));
   }
   return HRHIST;
+}
+
+/* HR (bpm) interpolated at a course km, for the scrubber tooltip. */
+function hrAtKm(km){
+  const hp=hrPoints(); if(!hp.length) return null;
+  if(km<=hp[0].km) return hp[0].bpm;
+  for(let i=1;i<hp.length;i++){ if(km<=hp[i].km){ const a=hp[i-1],b=hp[i],g=(km-a.km)/Math.max(b.km-a.km,1e-6); return a.bpm+(b.bpm-a.bpm)*g; } }
+  return hp[hp.length-1].bpm;
+}
+
+/* Press-and-hold scrubber on the course profile — reads out the data at the touched
+   point (elevation + whichever overlays are on), like the in-app Event Chart. */
+function wireScrub(){
+  if(SCRUB_WIRED) return; SCRUB_WIRED=true;
+  const svg=$("profile"), tip=$("scrubtip");
+  const set=(e)=>{
+    const rect=svg.getBoundingClientRect();
+    const cx = e.clientX!=null ? e.clientX : (e.touches&&e.touches[0] ? e.touches[0].clientX : rect.left);
+    const frac = clamp((cx-rect.left)/Math.max(rect.width,1), 0, 1);
+    SCRUB = frac;
+    drawProfile(LAST ? num(LAST.km) : null);
+    const km=frac*TOTKM, sp=posAt(km), md=measAt(frac);
+    const parts=[`<b>${km.toFixed(1)} km</b>`];
+    if(sp) parts.push(`${Math.round(sp.elevationM)} m`);
+    if(SHOW.temp && md.temp!=null)  parts.push(`<span style="color:var(--temp)">${Math.round(md.temp)}°</span>`);
+    if(SHOW.humid && md.humid!=null) parts.push(`<span style="color:var(--humid)">${Math.round(md.humid)}%</span>`);
+    if(SHOW.gluc && md.gluc!=null)  parts.push(`<span style="color:var(--gluc)">${md.gluc.toFixed(1)}</span>`);
+    if(SHOW.hr){ const hh=hrAtKm(km); if(hh!=null) parts.push(`<span style="color:var(--hr)">${Math.round(hh)} bpm</span>`); }
+    tip.innerHTML = parts.join(" · ");
+    tip.style.left = Math.min(92, Math.max(8, frac*100)) + "%";
+    tip.classList.remove("hidden");
+  };
+  const end=()=>{ if(SCRUB==null) return; SCRUB=null; drawProfile(LAST?num(LAST.km):null); tip.classList.add("hidden"); };
+  svg.addEventListener("pointerdown", e=>{ e.preventDefault(); try{ svg.setPointerCapture(e.pointerId); }catch(_){} set(e); });
+  svg.addEventListener("pointermove", e=>{ if(SCRUB!=null){ e.preventDefault(); set(e); } });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>svg.addEventListener(ev, end));
 }
 
 /* ------------------------------------------------------------ init / load  */
@@ -377,10 +436,12 @@ function setupPlan(plan){
   drawProfile(null);
   renderPills();
   wirePills();
+  wireScrub();
   initMap();
 }
 
 async function refreshPlan(){
+  if(SIM) return;
   try{
     const token=getToken();
     const plan = await rpc("public_plan", {token});
@@ -390,6 +451,7 @@ async function refreshPlan(){
 
 /* ----------------------------------------------------------------- tick    */
 async function tick(){
+  if(SIM) return;   // simulation drives LAST locally; don't clobber it with real telemetry
   try{
     const token=getToken();
     const rows = await rpc("public_telemetry", {token});
@@ -446,7 +508,7 @@ function render(){
   const frac = (km!=null && TOTKM) ? clamp(km/TOTKM,0,1) : 0;
 
   // Conditions
-  const sim = !!PLAN.simulatorMode;
+  const sim = SIM || !!PLAN.simulatorMode;
   const nowSec = Date.now()/1000;
   let temp=null, humid=null, gluc=null;
   if(sim){ temp=Sim.temperature(frac); humid=Sim.humidity(frac); gluc=Sim.glucose(frac); }
@@ -463,7 +525,7 @@ function render(){
   const cpDone = cpsAll.filter(cp => (cpStates[cp.id] && cpStates[cp.id].complete) || (km!=null && km>=cp.km)).length;
   const kmFmt = (v)=> v==null ? "—" : v.toFixed(TOTKM<100?1:0);
   const primary = [
-    statCard("Pace", secPerKm!=null?fmtPace(secPerKm):"—", "/km", null, "accent"),
+    statCard("Pace", secPerKm!=null?fmtPace(secPerKm):"—", "/km", secPerKm!=null?`${(3600/secPerKm).toFixed(1)} km/h`:null, "accent"),
     st==="done" ? statCard("Total", fmtDur(elapsed), "", null, "accent")
                 : statCard("Projected finish", totalSec!=null?fmtDur(totalSec):"—", "", remainSec!=null?`${fmtDurShort(remainSec)} to go`:null, "accent")
   ];
@@ -474,7 +536,9 @@ function render(){
     const cpSub = nextCp
       ? (km!=null ? `next in ${Math.max(0,nextCp.km-km).toFixed(1)} km` : `next at ${nextCp.km.toFixed(TOTKM<100?1:0)} km`)
       : "all cleared";
-    primary.push(statCard("Checkpoints", `${cpDone}/${cpsAll.length}`, "", cpSub, "accent"));
+    let cpLink = null;
+    if(nextCp){ const p = posAt(nextCp.km); if(p && isFinite(p.latitude) && isFinite(p.longitude)) cpLink = mapsLink(p.latitude, p.longitude); }
+    primary.push(statCard("Checkpoints", `${cpDone}/${cpsAll.length}`, "", cpSub, "accent", null, cpLink));
   }
   $("stats-primary").innerHTML = primary.join("");
 
@@ -497,13 +561,21 @@ function render(){
   updateAge();
 }
 
-function statCard(k, v, u, sub2, cls, dotVar){
+function statCard(k, v, u, sub2, cls, dotVar, link){
   const dot = dotVar ? `<span class="ic" style="background:var(${dotVar})"></span>` : "";
+  const pin = link ? `<a class="cardpin" href="${link}" target="_blank" rel="noopener" aria-label="Open next checkpoint in Maps">📍</a>` : "";
   return `<div class="stat ${cls||""}">
-    <div class="k">${dot}${k}</div>
+    ${pin}<div class="k">${dot}${k}</div>
     <div class="v">${v}<span class="u">${u||""}</span></div>
     ${sub2?`<div class="sub2">${sub2}</div>`:""}
   </div>`;
+}
+
+/* Cross-platform "open in maps" link — Apple Maps on Apple devices, else Google. */
+function mapsLink(lat, lng){
+  const q = `${(+lat).toFixed(6)},${(+lng).toFixed(6)}`;
+  const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+  return apple ? `https://maps.apple.com/?ll=${q}&q=Checkpoint` : `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
 /* --------------------------------------------------------------- profile   */
@@ -561,6 +633,18 @@ function drawProfile(km){
     }
   }
 
+  // press-and-hold scrubber marker: a dashed line + dots at the touched km.
+  let scr="";
+  if(SCRUB!=null){
+    const sx=SCRUB*W, sp=posAt(SCRUB*TOTKM), md=measAt(SCRUB);
+    scr = `<line x1="${sx.toFixed(1)}" y1="0" x2="${sx.toFixed(1)}" y2="${H}" stroke="var(--dim)" stroke-width="1" stroke-dasharray="3 3"/>`;
+    if(sp) scr += `<circle cx="${sx.toFixed(1)}" cy="${Y(sp.elevationM).toFixed(1)}" r="3.6" fill="var(--accent2)" stroke="var(--card)" stroke-width="1.5"/>`;
+    if(SHOW.temp && md.temp!=null)  scr+=`<circle cx="${sx.toFixed(1)}" cy="${Ym(md.temp,MRANGE.temp).toFixed(1)}" r="3" fill="var(--temp)"/>`;
+    if(SHOW.humid && md.humid!=null) scr+=`<circle cx="${sx.toFixed(1)}" cy="${Ym(md.humid,MRANGE.humid).toFixed(1)}" r="3" fill="var(--humid)"/>`;
+    if(SHOW.gluc && md.gluc!=null)  scr+=`<circle cx="${sx.toFixed(1)}" cy="${Ym(md.gluc,MRANGE.gluc).toFixed(1)}" r="3" fill="var(--gluc)"/>`;
+    if(SHOW.hr){ const hh=hrAtKm(SCRUB*TOTKM); if(hh!=null) scr+=`<circle cx="${sx.toFixed(1)}" cy="${Ym(hh,MRANGE.hr).toFixed(1)}" r="3" fill="var(--hr)"/>`; }
+  }
+
   svg.innerHTML = `
     <defs><linearGradient id="pg" x1="0" x2="0" y1="0" y2="1">
       <stop offset="0" stop-color="#2f7df6" stop-opacity=".38"/>
@@ -568,7 +652,7 @@ function drawProfile(km){
     </linearGradient></defs>
     <path class="fillp" d="${area}"/>
     <path class="linep" d="${line}"/>
-    ${ov}${cpm}${me}`;
+    ${ov}${cpm}${scr}${me}`;
 }
 
 /* ----------------------------------------------------------------- map     */
@@ -685,8 +769,74 @@ function wireTheme(){
   }
 }
 
+/* ---------------------------------------------- owner-only sim/live toggle  */
+let SIM=false, SIM_T0=null, SIM_TIMER=null, SIM_HR=[];
+const ADMIN_KEY="dromeas_track_admin";
+
+/* No login on this page, so `?admin=1` (remembered in localStorage) reveals the
+   toggle; `?admin=0` clears it. */
+function isAdmin(){
+  try{
+    const u=new URL(location.href);
+    if(u.searchParams.get("admin")==="1") localStorage.setItem(ADMIN_KEY,"1");
+    if(u.searchParams.get("admin")==="0") localStorage.removeItem(ADMIN_KEY);
+    return localStorage.getItem(ADMIN_KEY)==="1";
+  }catch(e){ return false; }
+}
+
+/* Self-contained synthetic plan so the demo works even without a real token. */
+function syntheticPlan(){
+  const N=80, pts=[];
+  for(let i=0;i<=N;i++){ const f=i/N;
+    pts.push({distanceKm:f*42.2, latitude:37.98+f*0.12, longitude:23.72+Math.sin(f*3)*0.03,
+      elevationM:60+180*(0.5-0.5*Math.cos(f*Math.PI*3))+30*Math.sin(f*9)}); }
+  const cps=[]; for(let i=1;i<=8;i++) cps.push({id:"scp"+i, km:i*42.2/9, pinned:i%2===0});
+  return { raceName:"Demo Marathon", distanceKm:42.2, simulatorMode:true,
+    startHour:8, startMinute:0, predictedHours:3, predictedMinutes:30, predictedSeconds:0,
+    track:{points:pts}, checkpoints:cps, checkpointStates:{} };
+}
+
+/* One frame of the slow demo: advance a fake runner over the whole course in ~10 min,
+   at a realistic pace so the pace/finish readouts stay sensible. */
+function simFrame(){
+  if(!SIM) return;
+  const DEMO_SECS=600;
+  const el=(Date.now()-SIM_T0)/1000, frac=Math.min(1, el/DEMO_SECS), km=frac*TOTKM;
+  const pace=(TOTMIN*60)/Math.max(TOTKM,1e-6);
+  const bpm=Math.round(138+18*Math.sin(el/9)+8*frac);
+  if(!SIM_HR.length || Math.abs(km-SIM_HR[SIM_HR.length-1][0])>TOTKM/120) SIM_HR.push([+km.toFixed(2), bpm]);
+  LAST={ km, bpm, elapsed_sec:km*pace, updated_at:new Date().toISOString(),
+         started_at:new Date(SIM_T0).toISOString(),
+         finished_at: frac>=1 ? new Date().toISOString() : null, hr_series:SIM_HR };
+  render();
+}
+
+function setSim(on){
+  SIM=on;
+  document.querySelectorAll("#simseg button").forEach(b=>b.classList.toggle("on", (b.dataset.m==="sim")===on));
+  if(on){
+    if(!PLAN) setupPlan(syntheticPlan());
+    SIM_T0=Date.now(); SIM_HR=[]; PREV_KM=null; LAST_PACE=null; HRHIST=[];
+    $("loading").classList.add("hidden"); $("error").classList.add("hidden"); $("app").classList.remove("hidden");
+    if(SIM_TIMER) clearInterval(SIM_TIMER);
+    SIM_TIMER=setInterval(simFrame, 1000); simFrame();
+  } else {
+    if(SIM_TIMER){ clearInterval(SIM_TIMER); SIM_TIMER=null; }
+    SIM_HR=[]; PREV_KM=null; LAST_PACE=null; HRHIST=[];
+    tick();   // resume real telemetry
+  }
+}
+
+function wireAdmin(){
+  if(!isAdmin()) return;
+  $("adminbar").classList.remove("hidden");
+  document.querySelector('#simseg button[data-m="live"]').classList.add("on");
+  $("simseg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; setSim(b.dataset.m==="sim"); });
+}
+
 applyTheme();
 wireTheme();
+wireAdmin();
 boot();
 </script>
 </body>
