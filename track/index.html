@@ -97,8 +97,16 @@
   .stat .sub2{color:var(--faint);font-size:12px;margin-top:3px;font-variant-numeric:tabular-nums}
   .stat .ic{width:8px;height:8px;border-radius:50%}
   .stat.accent{background:linear-gradient(180deg,var(--card2),var(--card))}
-  .cardpin{position:absolute;top:7px;right:7px;z-index:2;font-size:15px;line-height:1;text-decoration:none;padding:4px;border-radius:8px;opacity:.9}
-  .cardpin:active{opacity:.55}
+  .cardpin{position:absolute;top:7px;right:7px;z-index:2;display:inline-flex;align-items:center;gap:3px;
+    background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:4px 7px;cursor:pointer;
+    color:var(--accent);font:800 10.5px/1 inherit;letter-spacing:.3px;text-transform:uppercase}
+  .cardpin svg{width:12px;height:12px;fill:currentColor}
+  .cardpin:active{background:var(--card)}
+  .mapsmenu{position:fixed;z-index:50;background:var(--card2);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);overflow:hidden;min-width:150px}
+  .mapsmenu .mm-h{padding:8px 14px 4px;color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:800}
+  .mapsmenu a{display:block;padding:11px 14px;color:var(--text);text-decoration:none;font:600 13.5px/1 inherit}
+  .mapsmenu a:active{background:var(--card)}
+  .mapsmenu a+a{border-top:1px solid var(--line)}
 
   /* Cards */
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:0 0 16px;box-shadow:var(--shadow)}
@@ -536,9 +544,9 @@ function render(){
     const cpSub = nextCp
       ? (km!=null ? `next in ${Math.max(0,nextCp.km-km).toFixed(1)} km` : `next at ${nextCp.km.toFixed(TOTKM<100?1:0)} km`)
       : "all cleared";
-    let cpLink = null;
-    if(nextCp){ const p = posAt(nextCp.km); if(p && isFinite(p.latitude) && isFinite(p.longitude)) cpLink = mapsLink(p.latitude, p.longitude); }
-    primary.push(statCard("Checkpoints", `${cpDone}/${cpsAll.length}`, "", cpSub, "accent", null, cpLink));
+    let cpLoc = null;
+    if(nextCp){ const p = posAt(nextCp.km); if(p && isFinite(p.latitude) && isFinite(p.longitude)) cpLoc = `${p.latitude.toFixed(6)},${p.longitude.toFixed(6)}`; }
+    primary.push(statCard("Checkpoints", `${cpDone}/${cpsAll.length}`, "", cpSub, "accent", null, cpLoc));
   }
   $("stats-primary").innerHTML = primary.join("");
 
@@ -563,7 +571,7 @@ function render(){
 
 function statCard(k, v, u, sub2, cls, dotVar, link){
   const dot = dotVar ? `<span class="ic" style="background:var(${dotVar})"></span>` : "";
-  const pin = link ? `<a class="cardpin" href="${link}" target="_blank" rel="noopener" aria-label="Open next checkpoint in Maps">📍</a>` : "";
+  const pin = link ? `<button type="button" class="cardpin" aria-label="Open next checkpoint in Maps" onclick="showMapsMenu(event,'${link}')"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z"/></svg>Map</button>` : "";
   return `<div class="stat ${cls||""}">
     ${pin}<div class="k">${dot}${k}</div>
     <div class="v">${v}<span class="u">${u||""}</span></div>
@@ -571,11 +579,22 @@ function statCard(k, v, u, sub2, cls, dotVar, link){
   </div>`;
 }
 
-/* Cross-platform "open in maps" link — Apple Maps on Apple devices, else Google. */
-function mapsLink(lat, lng){
-  const q = `${(+lat).toFixed(6)},${(+lng).toFixed(6)}`;
-  const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
-  return apple ? `https://maps.apple.com/?ll=${q}&q=Checkpoint` : `https://www.google.com/maps/search/?api=1&query=${q}`;
+/* Tap the checkpoint pin → a small chooser so the viewer picks Apple or Google Maps. */
+function closeMapsMenu(){ const m=document.getElementById("mapsmenu"); if(m) m.remove(); }
+function showMapsMenu(ev, loc){
+  ev.preventDefault(); ev.stopPropagation();
+  closeMapsMenu();
+  const q = String(loc).split(",").map(n=>(+n).toFixed(6)).join(",");
+  const m = document.createElement("div");
+  m.id="mapsmenu"; m.className="mapsmenu";
+  m.innerHTML = `<div class="mm-h">Open next checkpoint</div>
+    <a href="https://maps.apple.com/?ll=${q}&q=Checkpoint" target="_blank" rel="noopener">Apple Maps</a>
+    <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Google Maps</a>`;
+  document.body.appendChild(m);
+  const r = ev.currentTarget.getBoundingClientRect();
+  m.style.top = (r.bottom + 6) + "px";
+  m.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + "px";
+  setTimeout(()=>document.addEventListener("click", closeMapsMenu, {once:true}), 0);
 }
 
 /* --------------------------------------------------------------- profile   */
