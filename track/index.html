@@ -203,7 +203,7 @@
     </div>
 
     <div class="card">
-      <h2>Course profile <span class="r">press &amp; hold to inspect</span></h2>
+      <h2>Activity chart <span class="r">press &amp; hold to inspect</span></h2>
       <div class="pills" id="prof-pills"></div>
       <div class="profwrap">
         <svg class="profile" id="profile" viewBox="0 0 1000 150" preserveAspectRatio="none"></svg>
@@ -370,7 +370,7 @@ function hrAtKm(km){
 }
 
 /* Press-and-hold scrubber on the course profile — reads out the data at the touched
-   point (elevation + whichever overlays are on), like the in-app Event Chart. */
+   point (elevation + whichever overlays are on), like the in-app Activity Chart. */
 function wireScrub(){
   if(SCRUB_WIRED) return; SCRUB_WIRED=true;
   const svg=$("profile"), tip=$("scrubtip");
@@ -646,7 +646,7 @@ function drawProfile(km){
 
   // Measurement overlays (toggled by the pills). Each series is normalized to its
   // own range so they can share the elevation chart's height — same idea as the
-  // in-app Event Chart.
+  // in-app Activity Chart.
   const Ym=(v,r)=>H-pad-clamp((v-r[0])/(r[1]-r[0]),0,1)*(H-2*pad);
   const sampledTrace=(key,valFn)=>{
     let d="",on=false;
