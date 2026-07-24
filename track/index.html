@@ -480,6 +480,22 @@ function raceState(){
   return "pending";
 }
 
+/* The race clock, extrapolated from the last telemetry so it ticks every second
+   instead of jumping with the ~4s poll. Uses `updated_at` (UTC) + `elapsed_sec` — no
+   timezone assumptions — and freezes once finished. */
+function liveElapsed(){
+  if(!LAST) return null;
+  const st = raceState();
+  if(st==="pending") return 0;
+  const e = num(LAST.elapsed_sec);
+  if(st==="done") return e;                    // frozen at the finish time
+  if(e!=null && LAST.updated_at){
+    const since = (Date.now() - Date.parse(LAST.updated_at))/1000;
+    return e + Math.max(0, since);             // last elapsed + time since it arrived
+  }
+  return e;
+}
+
 function render(){
   const st = raceState();
   const badge = $("status");
@@ -491,7 +507,7 @@ function render(){
   const hasPos = km!=null && PTS.length;
 
   // Elapsed
-  $("elapsed").textContent = fmtDur(elapsed!=null ? elapsed : (st==="pending"?0:null));
+  $("elapsed").textContent = fmtDur(liveElapsed());
   $("elapsed-lab").textContent = st==="done" ? "Finish time" : "Elapsed";
 
   // Progress
@@ -726,6 +742,7 @@ function updateMap(km){
 /* --------------------------------------------------------------- age       */
 function startAgeTimer(){ if(AGE_TIMER) clearInterval(AGE_TIMER); AGE_TIMER=setInterval(updateAge,1000); }
 function updateAge(){
+  $("elapsed").textContent = fmtDur(liveElapsed());   // tick the race clock every second
   if(!LAST || !LAST.updated_at){ $("age").textContent=""; return; }
   const t=Date.parse(LAST.updated_at); if(isNaN(t)){ $("age").textContent=""; return; }
   const sec=Math.max(0,(Date.now()-t)/1000);
