@@ -85,6 +85,9 @@
   .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;
     background:var(--inset);border:1px solid var(--line);color:var(--dim);font:700 12px/1 inherit;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
   .pill.on{background:var(--card2);border-color:var(--accent);color:var(--text)}
+  /* Unavailable measure: still listed (so the reader knows it exists) but visibly
+     inert, rather than disappearing from the row entirely. */
+  .pill.off{opacity:.4;cursor:default}
   .pdot{width:8px;height:8px;border-radius:50%}
   /* Light / dark / system control */
   .theme{margin-left:auto;display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
@@ -566,11 +569,18 @@ function render(){
   }
   $("stats-primary").innerHTML = primary.join("");
 
-  // Conditions row.
-  const metrics = [ statCard("Heart rate", hr!=null?hr:"—", "bpm", null, "", "--hr") ];
-  if(temp!=null) metrics.push(statCard("Temp", Math.round(temp), "°C", sim?"demo":null, "", "--temp"));
-  if(humid!=null) metrics.push(statCard("Humidity", Math.round(humid), "%", sim?"demo":null, "", "--humid"));
-  if(gluc!=null) metrics.push(statCard("Glucose", gluc.toFixed(1), "mmol/L", "demo", "", "--gluc"));
+  // Conditions row. Every card is ALWAYS rendered — a missing reading shows "—"
+  // with the reason underneath, rather than the whole box vanishing (which reads
+  // as "this feature is gone" instead of "no data yet"). Mirrors the in-app tiles.
+  const metrics = [
+    statCard("Heart rate", hr!=null?hr:"—", "bpm", hr!=null?null:"no strap", "", "--hr"),
+    statCard("Temp", temp!=null?Math.round(temp):"—", "°C",
+             temp!=null ? (sim?"demo":null) : "no forecast", "", "--temp"),
+    statCard("Humidity", humid!=null?Math.round(humid):"—", "%",
+             humid!=null ? (sim?"demo":null) : "no forecast", "", "--humid"),
+    statCard("Glucose", gluc!=null?gluc.toFixed(1):"—", "mmol/L",
+             gluc!=null ? "demo" : "not connected", "", "--gluc")
+  ];
   $("stats-metrics").innerHTML = metrics.join("");
 
   // Accumulate an HR-vs-distance trace for the profile overlay.
@@ -764,15 +774,22 @@ function measAvail(){
 }
 function renderPills(){
   const a=measAvail();
-  $("prof-pills").innerHTML = PILLDEFS.filter(p=>a[p.k]).map(p=>
-    `<button type="button" class="pill ${SHOW[p.k]?"on":""}" data-k="${p.k}"><span class="pdot" style="background:var(${p.c})"></span>${p.l}</button>`
-  ).join("");
+  // Show every measure. Ones with no data are dimmed and un-clickable with a
+  // reason on hover — hiding them made the feature look removed rather than idle.
+  const why={temp:"No forecast fetched for this event",humid:"No forecast fetched for this event",
+             gluc:"No glucose source connected",hr:"No heart-rate data"};
+  $("prof-pills").innerHTML = PILLDEFS.map(p=>{
+    const on = a[p.k];
+    return `<button type="button" class="pill ${on?(SHOW[p.k]?"on":""):"off"}" data-k="${p.k}"`
+      + (on?"":` disabled title="${why[p.k]}"`)
+      + `><span class="pdot" style="background:var(${p.c})"></span>${p.l}</button>`;
+  }).join("");
 }
 let PILLS_WIRED=false;
 function wirePills(){
   if(PILLS_WIRED) return; PILLS_WIRED=true;
   $("prof-pills").addEventListener("click",(e)=>{
-    const b=e.target.closest(".pill"); if(!b) return;
+    const b=e.target.closest(".pill"); if(!b || b.disabled) return;
     SHOW[b.dataset.k]=!SHOW[b.dataset.k];
     renderPills(); drawProfile(LAST?num(LAST.km):null);
   });
